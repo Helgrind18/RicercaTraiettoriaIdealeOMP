@@ -1,9 +1,12 @@
 #include "TestPunto2D.hpp"
-#include <iostream>
 #include "TestPista.hpp"
+#include "TestVeicolo.hpp"
+
 int main() {
 
     //eseguiTestPunto2D();
-    eseguiTestPista();
+    //eseguiTestPista();
+    eseguiTestVeicolo();
+
     return 0;
 }
