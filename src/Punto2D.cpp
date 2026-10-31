@@ -1,4 +1,10 @@
 #include "Punto2D.hpp"
+
+#include <complex>
+#include <math.h>
+#include <bits/valarray_after.h>
+using namespace std;
+#include <bits/valarray_after.h>
 //Qui dentro devo inserire l'implementazione dei metodi dell'header
 //Punto2D:: vuol dire che sto implementando un metodo appartenente a quella classe
 Punto2D::Punto2D() {
@@ -25,4 +31,8 @@ void Punto2D::setY(double y) {
 
 bool Punto2D::operator==(const Punto2D &punto) const{
     return this->x == punto.x && this->y == punto.y;
+}
+
+double Punto2D::distanza(const Punto2D &punto) const {
+    return sqrt(pow(this->x - punto.x, 2) + pow(this->y - punto.y, 2));
 }

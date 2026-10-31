@@ -25,6 +25,8 @@ public:
 
     // Due punti sono uguali se hanno le stesse coordinate X e Y
     bool operator==(const Punto2D &punto) const;
+
+    double distanza(const Punto2D &punto) const;
 };
 
 #endif // RICERCATRAIETTORIAIDEALEOMP_PUNTO2D_HPP

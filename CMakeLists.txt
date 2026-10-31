@@ -26,6 +26,12 @@ add_executable(RicercaTraiettoriaIdealeOMP
         test/TestVeicolo.cpp
         include/SezionePista.hpp
         src/SezionePista.cpp
+        test/TestSezionePista.hpp
+        test/TestSezionePista.cpp
+        include/DiscretizzatorePista.hpp
+        src/DiscretizzatorePista.cpp
+        include/Traiettoria.hpp
+        src/Traiettoria.cpp
 )
 
 target_include_directories(RicercaTraiettoriaIdealeOMP PRIVATE
