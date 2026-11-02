@@ -2,9 +2,7 @@
 
 #include <complex>
 #include <math.h>
-#include <bits/valarray_after.h>
 using namespace std;
-#include <bits/valarray_after.h>
 //Qui dentro devo inserire l'implementazione dei metodi dell'header
 //Punto2D:: vuol dire che sto implementando un metodo appartenente a quella classe
 Punto2D::Punto2D() {

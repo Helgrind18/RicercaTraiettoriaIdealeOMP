@@ -32,6 +32,12 @@ add_executable(RicercaTraiettoriaIdealeOMP
         src/DiscretizzatorePista.cpp
         include/Traiettoria.hpp
         src/Traiettoria.cpp
+        test/TestDiscretizzatorePista.hpp
+        test/TestDiscretizzatorePista.cpp
+        test/TestTraiettoria.hpp
+        test/TestTraiettoria.cpp
+        include/GeneraTraiettorie.hpp
+        src/GeneraTraiettorie.cpp
 )
 
 target_include_directories(RicercaTraiettoriaIdealeOMP PRIVATE

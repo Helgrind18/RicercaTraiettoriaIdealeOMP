@@ -36,7 +36,6 @@ const vector<double>& Traiettoria::getPosizioniLaterali() const {
     return this->posizioniLaterali;
 }
 
-
 // Restituisce una specifica posizione laterale
 double Traiettoria::getPosizioneLaterale(int indice) const {
 

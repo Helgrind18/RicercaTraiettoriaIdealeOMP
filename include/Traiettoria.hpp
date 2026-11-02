@@ -6,6 +6,8 @@
 
 #include <vector>
 
+using namespace std;
+
 // Rappresenta una possibile traiettoria percorsa dal veicolo
 // lungo la pista.
 //
@@ -31,7 +33,7 @@ class Traiettoria {
 private:
 
     // Posizione laterale del veicolo per ogni sezione della pista.
-    std::vector<double> posizioniLaterali;
+    vector<double> posizioniLaterali;
 
 public:
 
@@ -42,11 +44,13 @@ public:
     // Costruisce una traiettoria utilizzando le posizioni
     // laterali specificate.
     Traiettoria(
-        const std::vector<double>& posizioniLaterali
+        const vector<double>& posizioniLaterali
     );
 
-    // Restituisce tutte le posizioni laterali della traiettoria.
-    const std::vector<double>& getPosizioniLaterali() const;
+    // Restituisce tutte le posizioni laterali senza copiarle.
+    // Il riferimento è const, quindi non possono essere
+    // modificate direttamente dall'esterno.
+    const vector<double>& getPosizioniLaterali() const;
 
     // Restituisce la posizione laterale relativa
     // alla sezione indicata.
@@ -75,8 +79,8 @@ public:
     //
     // Il numero di sezioni deve coincidere con il numero
     // di posizioni laterali della traiettoria.
-    std::vector<Punto2D> calcolaPunti(
-        const std::vector<SezionePista>& sezioni
+    vector<Punto2D> calcolaPunti(
+        const vector<SezionePista>& sezioni
     ) const;
 };
 
