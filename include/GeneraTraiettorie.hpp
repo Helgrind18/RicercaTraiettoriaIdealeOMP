@@ -5,7 +5,7 @@
 
 #include <random>
 #include <vector>
-
+using namespace std;
 // Si occupa della generazione delle traiettorie iniziali
 // utilizzate dall'algoritmo genetico.
 //
@@ -25,7 +25,7 @@ private:
 
     // Generatore pseudocasuale utilizzato per creare
     // le posizioni laterali delle traiettorie.
-    std::mt19937 generatore;
+    mt19937 generatore;
 
 public:
 
@@ -36,27 +36,20 @@ public:
     // una posizione laterale per ogni sezione.
     //
     // numeroSezioni deve essere maggiore di zero.
-    Traiettoria generaTraiettoriaCasuale(
-        int numeroSezioni
-    );
+    Traiettoria generaTraiettoriaCasuale(int numeroSezioni);
 
     // Genera una popolazione di traiettorie casuali.
     //
     // numeroTraiettorie indica quanti individui creare.
     // numeroSezioni indica quante posizioni deve contenere
     // ogni traiettoria.
-    std::vector<Traiettoria> generaPopolazione(
-        int numeroTraiettorie,
-        int numeroSezioni
-    );
+    vector<Traiettoria> generaPopolazione(int numeroTraiettorie,int numeroSezioni);
 
     // Genera una traiettoria che passa sempre
     // per il centro della pista.
     //
     // Ogni posizione laterale sarà uguale a 0.5.
-    Traiettoria generaTraiettoriaCentrale(
-        int numeroSezioni
-    ) const;
+    Traiettoria generaTraiettoriaCentrale(int numeroSezioni) const;
 };
 
 #endif
