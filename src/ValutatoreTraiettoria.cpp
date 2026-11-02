@@ -111,8 +111,19 @@ ValutatoreTraiettoria::calcolaProfiloVelocita(const vector<Punto2D> &punti, cons
             const Punto2D &successivo = punti[indiceSuccessivo];
             double distanza = corrente.distanza(successivo);
             double velocitaCorrente = profiloVelocita[i];
+
+            // L'accelerazione non e piu costante: dipende dalla potenza
+            // disponibile e dalla resistenza aerodinamica alla velocita corrente.
+            double accelerazioneEffettiva = calcolaAccelerazioneEffettiva(
+                velocitaCorrente, veicolo);
+
             double velocitaMassimaRaggiungibile = calcolaVelocitaMassimaRaggiungibile(
-                velocitaCorrente, veicolo.getAccelerazioneMassima(), distanza);
+                velocitaCorrente, accelerazioneEffettiva, distanza);
+
+            // In ogni caso non superiamo il limite assoluto del veicolo.
+            velocitaMassimaRaggiungibile = min(
+                velocitaMassimaRaggiungibile, veicolo.getVelocitaMassima());
+
             double velocitaPuntoSuccessivo = profiloVelocita[indiceSuccessivo];
             if (velocitaPuntoSuccessivo - velocitaMassimaRaggiungibile > epsilon) {
                 profiloVelocita[indiceSuccessivo] = velocitaMassimaRaggiungibile;
@@ -144,15 +155,77 @@ double ValutatoreTraiettoria::calcolaVelocitaMassimaRaggiungibile(
     const double accelerazione,
     double distanza
 ) const {
-    return sqrt(
+    double radicando =
         (velocitaIesima * velocitaIesima)
         +
-        (
-            2.0 *
-            distanza *
-            accelerazione
-        )
+        (2.0 * distanza * accelerazione);
+
+    // Se la resistenza aerodinamica fosse superiore alla forza
+    // motrice su un segmento molto lungo, evitiamo sqrt di un
+    // valore negativo.
+    if (radicando <= 0.0) {
+        return 0.0;
+    }
+
+    return sqrt(radicando);
+}
+
+double ValutatoreTraiettoria::calcolaForzaTrazione(
+    double velocita,
+    const Veicolo &veicolo
+) const {
+    // A basse velocita la forza e limitata dalla capacita massima
+    // di accelerazione del veicolo.
+    double forzaMassimaPerAccelerazione =
+        veicolo.getMassa() * veicolo.getAccelerazioneMassima();
+
+    const double epsilonVelocita = 1e-6;
+
+    if (velocita <= epsilonVelocita) {
+        return forzaMassimaPerAccelerazione;
+    }
+
+    // P = F * v  ->  F = P / v
+    double forzaLimitataDallaPotenza =
+        veicolo.getPotenzaMassima() / velocita;
+
+    return min(
+        forzaMassimaPerAccelerazione,
+        forzaLimitataDallaPotenza
     );
+}
+
+double ValutatoreTraiettoria::calcolaForzaResistenzaAerodinamica(
+    double velocita,
+    const Veicolo &veicolo
+) const {
+    // Densita dell'aria al livello del mare, assunta costante
+    // nel nostro modello semplificato.
+    const double densitaAria = 1.225;
+
+    return 0.5
+        * densitaAria
+        * veicolo.getCoefficienteResistenzaAerodinamica()
+        * veicolo.getAreaFrontale()
+        * velocita
+        * velocita;
+}
+
+double ValutatoreTraiettoria::calcolaAccelerazioneEffettiva(
+    double velocita,
+    const Veicolo &veicolo
+) const {
+    double forzaTrazione =
+        calcolaForzaTrazione(velocita, veicolo);
+
+    double forzaAerodinamica =
+        calcolaForzaResistenzaAerodinamica(velocita, veicolo);
+
+    double forzaNetta =
+        forzaTrazione - forzaAerodinamica;
+
+    // Seconda legge di Newton: a = F / m.
+    return forzaNetta / veicolo.getMassa();
 }
 
 double ValutatoreTraiettoria::calcolaVelocitaMassimaCurva(double curvatura, const Veicolo &veicolo) const {

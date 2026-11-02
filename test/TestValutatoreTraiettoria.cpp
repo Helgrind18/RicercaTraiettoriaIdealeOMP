@@ -63,6 +63,10 @@ namespace {
             0.8
         );
 
+        veicolo.setAreaFrontale(
+            1.5
+        );
+
         veicolo.setVelocitaMassima(
             velocitaMassima
         );
@@ -606,6 +610,167 @@ void eseguiTestValutatoreTraiettoria() {
 
 
     cout << "[OK] La stessa traiettoria produce lo stesso tempo.\n"
+         << endl;
+
+
+
+    // ============================================================
+    // TEST 9 - EFFETTO DELLA POTENZA MASSIMA
+    // ============================================================
+
+    cout << "[Test 9] Effetto della potenza massima" << endl;
+
+    // Circuito con rettilinei e curve di raggio differente.
+    // In questo modo, dopo i punti piu lenti, il veicolo deve
+    // realmente accelerare e la potenza entra nel calcolo.
+    vector<SezionePista> sezioniAerodinamica = {
+        creaSezioneCentrata(0.0, 0.0),
+        creaSezioneCentrata(100.0, 0.0),
+        creaSezioneCentrata(200.0, 0.0),
+        creaSezioneCentrata(300.0, 0.0),
+        creaSezioneCentrata(350.0, 50.0),
+        creaSezioneCentrata(300.0, 100.0),
+        creaSezioneCentrata(200.0, 100.0),
+        creaSezioneCentrata(100.0, 100.0),
+        creaSezioneCentrata(0.0, 100.0),
+        creaSezioneCentrata(-50.0, 50.0)
+    };
+
+    Traiettoria traiettoriaAerodinamica(
+        {
+            0.5, 0.5, 0.5, 0.5, 0.5,
+            0.5, 0.5, 0.5, 0.5, 0.5
+        }
+    );
+
+    Veicolo veicoloPotenzaBassa =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    Veicolo veicoloPotenzaAlta =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    veicoloPotenzaBassa.setPotenzaMassima(100000.0);
+    veicoloPotenzaAlta.setPotenzaMassima(800000.0);
+
+    double tempoPotenzaBassa =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloPotenzaBassa
+        );
+
+    double tempoPotenzaAlta =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloPotenzaAlta
+        );
+
+    cout << "Potenza 100 kW -> "
+         << tempoPotenzaBassa
+         << " s"
+         << endl;
+
+    cout << "Potenza 800 kW -> "
+         << tempoPotenzaAlta
+         << " s"
+         << endl;
+
+    assert(tempoPotenzaBassa > tempoPotenzaAlta);
+
+    cout << "[OK] Una maggiore potenza migliora la capacita di accelerazione.\n"
+         << endl;
+
+
+
+    // ============================================================
+    // TEST 10 - EFFETTO DEL COEFFICIENTE AERODINAMICO
+    // ============================================================
+
+    cout << "[Test 10] Effetto del coefficiente aerodinamico" << endl;
+
+    Veicolo veicoloCdBasso =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    Veicolo veicoloCdAlto =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    veicoloCdBasso.setCoefficienteResistenzaAerodinamica(0.50);
+    veicoloCdAlto.setCoefficienteResistenzaAerodinamica(1.50);
+
+    double tempoCdBasso =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloCdBasso
+        );
+
+    double tempoCdAlto =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloCdAlto
+        );
+
+    cout << "Cd 0.50 -> "
+         << tempoCdBasso
+         << " s"
+         << endl;
+
+    cout << "Cd 1.50 -> "
+         << tempoCdAlto
+         << " s"
+         << endl;
+
+    assert(tempoCdAlto > tempoCdBasso);
+
+    cout << "[OK] Un coefficiente aerodinamico maggiore aumenta la resistenza.\n"
+         << endl;
+
+
+
+    // ============================================================
+    // TEST 11 - EFFETTO DELL'AREA FRONTALE
+    // ============================================================
+
+    cout << "[Test 11] Effetto dell'area frontale" << endl;
+
+    Veicolo veicoloAreaPiccola =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    Veicolo veicoloAreaGrande =
+        creaVeicoloTest(100.0, 30.0, 1.0);
+
+    veicoloAreaPiccola.setAreaFrontale(1.00);
+    veicoloAreaGrande.setAreaFrontale(3.00);
+
+    double tempoAreaPiccola =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloAreaPiccola
+        );
+
+    double tempoAreaGrande =
+        valutatore.valutaTraiettoria(
+            traiettoriaAerodinamica,
+            sezioniAerodinamica,
+            veicoloAreaGrande
+        );
+
+    cout << "Area frontale 1.00 m^2 -> "
+         << tempoAreaPiccola
+         << " s"
+         << endl;
+
+    cout << "Area frontale 3.00 m^2 -> "
+         << tempoAreaGrande
+         << " s"
+         << endl;
+
+    assert(tempoAreaGrande > tempoAreaPiccola);
+
+    cout << "[OK] Un'area frontale maggiore aumenta la resistenza aerodinamica.\n"
          << endl;
 
 

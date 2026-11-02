@@ -23,6 +23,7 @@ using namespace std;
 // - decelerazione massima del veicolo
 // - potenza massima
 // - resistenza aerodinamica
+// - area frontale del veicolo
 //
 // Il ValutatoreTraiettoria non modifica né la traiettoria,
 // né il veicolo, né le sezioni della pista.
@@ -64,6 +65,19 @@ private:
     double calcolaVelocitaMassimaCurva(double curvatura, const Veicolo& veicolo) const;
 
     double calcolaVelocitaMassimaRaggiungibile(double velocitaIesima, const double accelerazione, double distanza) const;
+
+    // Calcola la forza motrice disponibile alla velocita corrente.
+    // La forza e limitata sia dall'accelerazione massima sia
+    // dalla potenza massima del veicolo.
+    double calcolaForzaTrazione(double velocita, const Veicolo& veicolo) const;
+
+    // Calcola la resistenza aerodinamica:
+    // F_drag = 1/2 * rho * Cd * A * v^2.
+    double calcolaForzaResistenzaAerodinamica(double velocita, const Veicolo& veicolo) const;
+
+    // Calcola l'accelerazione longitudinale realmente disponibile
+    // tenendo conto della forza motrice e della resistenza dell'aria.
+    double calcolaAccelerazioneEffettiva(double velocita, const Veicolo& veicolo) const;
     // Calcola il tempo necessario per percorrere un singolo
     // segmento della traiettoria conoscendo:
     //

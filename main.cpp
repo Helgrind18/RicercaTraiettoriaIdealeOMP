@@ -10,7 +10,7 @@ int main() {
 
     //eseguiTestPunto2D();
     //eseguiTestPista();
-    //eseguiTestVeicolo();
+    eseguiTestVeicolo();
     //eseguiTestPista();
     //eseguiTestDiscretizzatorePista();
     //eseguiTestTraiettoria();

@@ -18,6 +18,7 @@ Veicolo::Veicolo()
     this->accelerazioneMassima = 0.0;
     this->decelerazioneMassima = 0.0;
     this->coefficienteResistenzaAerodinamica = 0.0;
+    this->areaFrontale = 0.0;
     this->velocitaMassima = 0.0;
     this->accelerazioneLateraleMassima = 0.0;
 }
@@ -30,6 +31,7 @@ Veicolo::Veicolo(
     double accelerazioneMassima,
     double decelerazioneMassima,
     double coefficienteResistenzaAerodinamica,
+    double areaFrontale,
     double velocitaMassima,
     double accelerazioneLateraleMassima,
     const array<Gomma, 4> &gomme
@@ -40,6 +42,7 @@ Veicolo::Veicolo(
         accelerazioneMassima <= 0.0 ||
         decelerazioneMassima <= 0.0 ||
         coefficienteResistenzaAerodinamica <= 0.0 ||
+        areaFrontale <= 0.0 ||
         velocitaMassima <= 0.0 ||
         accelerazioneLateraleMassima <= 0.0
     ) {
@@ -74,6 +77,7 @@ Veicolo::Veicolo(
     this->decelerazioneMassima = decelerazioneMassima;
     this->coefficienteResistenzaAerodinamica =
             coefficienteResistenzaAerodinamica;
+    this->areaFrontale = areaFrontale;
 
     this->gomme = gomme;
     this->velocitaMassima = velocitaMassima;
@@ -104,6 +108,11 @@ double Veicolo::getDecelerazioneMassima() const {
 
 double Veicolo::getCoefficienteResistenzaAerodinamica() const {
     return this->coefficienteResistenzaAerodinamica;
+}
+
+
+double Veicolo::getAreaFrontale() const {
+    return this->areaFrontale;
 }
 
 
@@ -168,6 +177,17 @@ void Veicolo::setCoefficienteResistenzaAerodinamica(
 
     this->coefficienteResistenzaAerodinamica =
             coefficienteResistenzaAerodinamica;
+}
+
+
+void Veicolo::setAreaFrontale(double areaFrontale) {
+    if (areaFrontale <= 0.0) {
+        throw invalid_argument(
+            "L\'area frontale non puo essere negativa o nulla"
+        );
+    }
+
+    this->areaFrontale = areaFrontale;
 }
 
 

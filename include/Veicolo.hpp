@@ -17,6 +17,7 @@ private:
     double accelerazioneMassima;
     double decelerazioneMassima;
     double coefficienteResistenzaAerodinamica;
+    double areaFrontale;
     double velocitaMassima;
     double accelerazioneLateraleMassima;
 
@@ -36,6 +37,7 @@ public:
         double accelerazioneMassima,
         double decelerazioneMassima,
         double coefficienteResistenzaAerodinamica,
+        double areaFrontale,
         double velocitaMassima,
         double accelerazioneLateraleMassima,
         const array<Gomma, NUMERO_GOMME> &gomme
@@ -50,6 +52,8 @@ public:
     double getDecelerazioneMassima() const;
 
     double getCoefficienteResistenzaAerodinamica() const;
+
+    double getAreaFrontale() const;
 
     double getVelocitaMassima() const;
 
@@ -66,6 +70,9 @@ public:
     void setCoefficienteResistenzaAerodinamica(
         double coefficienteResistenzaAerodinamica
     );
+
+    void setAreaFrontale(double areaFrontale);
+
     void setVelocitaMassima(double velocitaMassima);
 
     void setAccelerazioneLateraleMassima(double accelerazioneLateraleMassima);

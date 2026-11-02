@@ -35,6 +35,11 @@ void eseguiTestVeicolo() {
     );
 
     assert(
+        veicoloDefault.getAreaFrontale()
+        == 0.0
+    );
+
+    assert(
         veicoloDefault.getVelocitaMassima()
         == 0.0
     );
@@ -63,6 +68,11 @@ void eseguiTestVeicolo() {
 
     cout << "  Coefficiente aerodinamico: "
          << veicoloDefault.getCoefficienteResistenzaAerodinamica()
+         << endl;
+
+    cout << "  Area frontale: "
+         << veicoloDefault.getAreaFrontale()
+         << " m^2"
          << endl;
 
     cout << "  Velocita massima: "
@@ -162,6 +172,7 @@ void eseguiTestVeicolo() {
         12.0,       // accelerazione massima
         15.0,       // decelerazione massima
         0.90,       // coefficiente resistenza aerodinamica
+        1.50,       // area frontale
 
         95.0,       // velocita massima
         30.0,       // accelerazione laterale massima
@@ -196,6 +207,11 @@ void eseguiTestVeicolo() {
     );
 
     assert(
+        veicolo.getAreaFrontale()
+        == 1.50
+    );
+
+    assert(
         veicolo.getVelocitaMassima()
         == 95.0
     );
@@ -224,6 +240,11 @@ void eseguiTestVeicolo() {
 
     cout << "  Coefficiente aerodinamico: "
          << veicolo.getCoefficienteResistenzaAerodinamica()
+         << endl;
+
+    cout << "  Area frontale: "
+         << veicolo.getAreaFrontale()
+         << " m^2"
          << endl;
 
     cout << "  Velocita massima: "
@@ -314,6 +335,10 @@ void eseguiTestVeicolo() {
         0.95
     );
 
+    veicolo.setAreaFrontale(
+        1.70
+    );
+
     veicolo.setVelocitaMassima(
         100.0
     );
@@ -349,6 +374,11 @@ void eseguiTestVeicolo() {
     );
 
     assert(
+        veicolo.getAreaFrontale()
+        == 1.70
+    );
+
+    assert(
         veicolo.getVelocitaMassima()
         == 100.0
     );
@@ -377,6 +407,11 @@ void eseguiTestVeicolo() {
 
     cout << "  Nuovo coefficiente aerodinamico: "
          << veicolo.getCoefficienteResistenzaAerodinamica()
+         << endl;
+
+    cout << "  Nuova area frontale: "
+         << veicolo.getAreaFrontale()
+         << " m^2"
          << endl;
 
     cout << "  Nuova velocita massima: "
@@ -495,6 +530,7 @@ void eseguiTestVeicolo() {
             12.0,
             15.0,
             0.90,
+            1.50,
 
             95.0,
             30.0,
@@ -563,6 +599,7 @@ void eseguiTestVeicolo() {
             12.0,
             15.0,
             0.90,
+            1.50,
 
             95.0,
             30.0,
@@ -631,6 +668,7 @@ void eseguiTestVeicolo() {
             12.0,
             15.0,
             0.90,
+            1.50,
 
             95.0,
             30.0,
@@ -753,6 +791,7 @@ void eseguiTestVeicolo() {
             12.0,
             15.0,
             0.90,
+            1.50,
 
             -10.0,
             30.0,
@@ -794,9 +833,51 @@ void eseguiTestVeicolo() {
             12.0,
             15.0,
             0.90,
+            1.50,
 
             95.0,
             -5.0,
+
+            gomme
+        );
+
+    }
+    catch (const invalid_argument& errore) {
+
+        eccezioneRicevuta = true;
+
+        cout << "  Eccezione correttamente ricevuta: "
+             << errore.what()
+             << endl;
+    }
+
+    assert(eccezioneRicevuta);
+
+    cout << "  -> OK\n" << endl;
+
+
+
+    // ============================================================
+    // TEST 15 - AREA FRONTALE NON VALIDA
+    // ============================================================
+
+    cout << "[TEST 15] Area frontale non valida" << endl;
+
+    eccezioneRicevuta = false;
+
+    try {
+
+        Veicolo veicoloErrato(
+
+            800.0,
+            500000.0,
+            12.0,
+            15.0,
+            0.90,
+            -1.50,
+
+            95.0,
+            30.0,
 
             gomme
         );
