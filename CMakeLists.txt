@@ -38,6 +38,12 @@ add_executable(RicercaTraiettoriaIdealeOMP
         test/TestTraiettoria.cpp
         include/GeneraTraiettorie.hpp
         src/GeneraTraiettorie.cpp
+        test/TestGeneratoreTraiettorie.hpp
+        test/TestGeneratoreTraiettorie.cpp
+        include/ValutatoreTraiettoria.hpp
+        src/ValutatoreTraiettoria.cpp
+        test/TestValutatoreTraiettoria.hpp
+        test/TestValutatoreTraiettoria.cpp
 )
 
 target_include_directories(RicercaTraiettoriaIdealeOMP PRIVATE

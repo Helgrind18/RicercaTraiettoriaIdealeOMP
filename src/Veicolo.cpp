@@ -18,6 +18,8 @@ Veicolo::Veicolo()
     this->accelerazioneMassima = 0.0;
     this->decelerazioneMassima = 0.0;
     this->coefficienteResistenzaAerodinamica = 0.0;
+    this->velocitaMassima = 0.0;
+    this->accelerazioneLateraleMassima = 0.0;
 }
 
 
@@ -28,6 +30,8 @@ Veicolo::Veicolo(
     double accelerazioneMassima,
     double decelerazioneMassima,
     double coefficienteResistenzaAerodinamica,
+    double velocitaMassima,
+    double accelerazioneLateraleMassima,
     const array<Gomma, 4> &gomme
 ) {
     if (
@@ -35,7 +39,9 @@ Veicolo::Veicolo(
         potenzaMassima <= 0.0 ||
         accelerazioneMassima <= 0.0 ||
         decelerazioneMassima <= 0.0 ||
-        coefficienteResistenzaAerodinamica <= 0.0
+        coefficienteResistenzaAerodinamica <= 0.0 ||
+        velocitaMassima <= 0.0 ||
+        accelerazioneLateraleMassima <= 0.0
     ) {
         throw invalid_argument(
             "Parametri di costruzione del veicolo non corretti"
@@ -70,6 +76,9 @@ Veicolo::Veicolo(
             coefficienteResistenzaAerodinamica;
 
     this->gomme = gomme;
+    this->velocitaMassima = velocitaMassima;
+    this->accelerazioneLateraleMassima = accelerazioneLateraleMassima;
+
 }
 
 
@@ -197,4 +206,29 @@ void Veicolo::cambiaGomma(int id, const Gomma &nuova) {
     }
 
     this->gomme[id] = nuova;
+}
+
+double Veicolo::getVelocitaMassima() const {
+    return this->velocitaMassima;
+}
+
+void Veicolo::setVelocitaMassima(double velocitaMassima) {
+    if (velocitaMassima <= 0.0) {
+        throw invalid_argument(
+            "La velocita massima non puo essere negativa o nulla"
+        );
+    }
+
+    this->velocitaMassima = velocitaMassima;
+}
+
+double Veicolo::getAccelerazioneLateraleMassima() const {
+    return this->accelerazioneLateraleMassima;
+}
+
+void Veicolo::setAccelerazioneLateraleMassima(double accelerazioneLateraleMassima) {
+    if (accelerazioneLateraleMassima <= 0.0) {
+        throw invalid_argument("Accelerazione laterale massima non accettata");
+    }
+    this->accelerazioneLateraleMassima = accelerazioneLateraleMassima;
 }

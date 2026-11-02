@@ -14,25 +14,37 @@
 using namespace std;
 
 
-// Funzioni utilizzate solamente all'interno di questo file di test.
+// Funzioni utilizzate solamente all'interno
+// di questo file di test.
 namespace {
 
-    // Confronta due double considerando una piccola tolleranza.
-    bool doubleUguali(double a, double b) {
+    bool doubleUguali(
+        double a,
+        double b
+    ) {
+
         const double epsilon = 0.000001;
 
         return abs(a - b) < epsilon;
     }
 
 
-    // Controlla che un Punto2D abbia le coordinate attese.
     bool puntoCorretto(
         const Punto2D& punto,
         double xAttesa,
         double yAttesa
     ) {
-        return doubleUguali(punto.getX(), xAttesa) &&
-               doubleUguali(punto.getY(), yAttesa);
+
+        return
+            doubleUguali(
+                punto.getX(),
+                xAttesa
+            )
+            &&
+            doubleUguali(
+                punto.getY(),
+                yAttesa
+            );
     }
 
 }
@@ -49,126 +61,88 @@ void eseguiTestDiscretizzatorePista() {
 
 
     // ============================================================
-    // TEST 1 - PISTA RETTILINEA CON 5 SEZIONI
+    // TEST 1 - CIRCUITO CHIUSO CON 4 SEZIONI
     // ============================================================
 
-    cout << "[Test 1] Pista rettilinea con 5 sezioni" << endl;
+    cout << "[Test 1] Circuito chiuso con 4 sezioni" << endl;
 
-    Pista pistaSemplice;
 
-    pistaSemplice.aggiungiPuntoBordoSinistro(
+    Pista pistaQuadrata;
+
+
+    // Bordo sinistro:
+    //
+    // (0,100) -------- (100,100)
+    //    |                 |
+    //    |                 |
+    // (0,0) ---------- (100,0)
+
+    pistaQuadrata.aggiungiPuntoBordoSinistro(
         Punto2D(0.0, 0.0)
     );
 
-    pistaSemplice.aggiungiPuntoBordoSinistro(
+    pistaQuadrata.aggiungiPuntoBordoSinistro(
         Punto2D(100.0, 0.0)
     );
 
+    pistaQuadrata.aggiungiPuntoBordoSinistro(
+        Punto2D(100.0, 100.0)
+    );
 
-    pistaSemplice.aggiungiPuntoBordoDestro(
+    pistaQuadrata.aggiungiPuntoBordoSinistro(
+        Punto2D(0.0, 100.0)
+    );
+
+
+    // Bordo destro:
+    //
+    // Stessa forma, traslata di 10 unità verso l'alto.
+
+    pistaQuadrata.aggiungiPuntoBordoDestro(
         Punto2D(0.0, 10.0)
     );
 
-    pistaSemplice.aggiungiPuntoBordoDestro(
+    pistaQuadrata.aggiungiPuntoBordoDestro(
         Punto2D(100.0, 10.0)
+    );
+
+    pistaQuadrata.aggiungiPuntoBordoDestro(
+        Punto2D(100.0, 110.0)
+    );
+
+    pistaQuadrata.aggiungiPuntoBordoDestro(
+        Punto2D(0.0, 110.0)
     );
 
 
     vector<SezionePista> sezioni =
         discretizzatore.discretizza(
-            pistaSemplice,
-            5
+            pistaQuadrata,
+            4
         );
 
 
-    assert(sezioni.size() == 5);
+    assert(sezioni.size() == 4);
 
 
     cout << "Numero sezioni ottenute: "
          << sezioni.size()
          << endl;
 
-    cout << "Numero sezioni attese: 5" << endl;
+    cout << "Numero sezioni attese: 4" << endl;
 
 
-    // Le coordinate X attese sono:
+    // Con 4 sezioni le posizioni normalizzate sono:
     //
-    // 0
-    // 25
-    // 50
-    // 75
-    // 100
-
-    const double coordinateXAttese[5] = {
-        0.0,
-        25.0,
-        50.0,
-        75.0,
-        100.0
-    };
+    // 0.00
+    // 0.25
+    // 0.50
+    // 0.75
+    //
+    // Essendo il quadrato composto da 4 lati uguali,
+    // otteniamo esattamente i quattro vertici.
 
 
-    for (int i = 0; i < 5; i++) {
-
-        const Punto2D& sinistro =
-            sezioni[i].getPuntoSinistro();
-
-        const Punto2D& destro =
-            sezioni[i].getPuntoDestro();
-
-
-        cout << "Sezione " << i
-             << ": (" << sinistro.getX()
-             << "," << sinistro.getY()
-             << ") -> ("
-             << destro.getX()
-             << "," << destro.getY()
-             << ")"
-             << endl;
-
-
-        assert(
-            puntoCorretto(
-                sinistro,
-                coordinateXAttese[i],
-                0.0
-            )
-        );
-
-
-        assert(
-            puntoCorretto(
-                destro,
-                coordinateXAttese[i],
-                10.0
-            )
-        );
-
-
-        // La pista ha sempre larghezza 10.
-        assert(
-            doubleUguali(
-                sezioni[i].calcolaLarghezza(),
-                10.0
-            )
-        );
-    }
-
-
-    cout << "[OK] Discretizzazione rettilinea corretta.\n"
-         << endl;
-
-
-
-    // ============================================================
-    // TEST 2 - PRIMA, CENTRALE E ULTIMA SEZIONE
-    // ============================================================
-
-    cout << "[Test 2] Controllo prima, centrale e ultima sezione"
-         << endl;
-
-
-    // Prima sezione
     assert(
         puntoCorretto(
             sezioni[0].getPuntoSinistro(),
@@ -179,247 +153,440 @@ void eseguiTestDiscretizzatorePista() {
 
     assert(
         puntoCorretto(
+            sezioni[1].getPuntoSinistro(),
+            100.0,
+            0.0
+        )
+    );
+
+    assert(
+        puntoCorretto(
+            sezioni[2].getPuntoSinistro(),
+            100.0,
+            100.0
+        )
+    );
+
+    assert(
+        puntoCorretto(
+            sezioni[3].getPuntoSinistro(),
+            0.0,
+            100.0
+        )
+    );
+
+
+    assert(
+        puntoCorretto(
             sezioni[0].getPuntoDestro(),
             0.0,
             10.0
         )
     );
 
-
-    // Sezione centrale
     assert(
         puntoCorretto(
-            sezioni[2].getPuntoSinistro(),
-            50.0,
-            0.0
+            sezioni[1].getPuntoDestro(),
+            100.0,
+            10.0
         )
     );
 
     assert(
         puntoCorretto(
             sezioni[2].getPuntoDestro(),
-            50.0,
-            10.0
+            100.0,
+            110.0
+        )
+    );
+
+    assert(
+        puntoCorretto(
+            sezioni[3].getPuntoDestro(),
+            0.0,
+            110.0
         )
     );
 
 
-    // Ultima sezione
+    for (size_t i = 0; i < sezioni.size(); i++) {
+
+        const Punto2D& sinistro =
+            sezioni[i].getPuntoSinistro();
+
+        const Punto2D& destro =
+            sezioni[i].getPuntoDestro();
+
+
+        cout << "Sezione " << i
+             << ": ("
+             << sinistro.getX()
+             << ","
+             << sinistro.getY()
+             << ") -> ("
+             << destro.getX()
+             << ","
+             << destro.getY()
+             << ")"
+             << endl;
+    }
+
+
+    cout << "[OK] Circuito chiuso discretizzato correttamente.\n"
+         << endl;
+
+
+
+    // ============================================================
+    // TEST 2 - NESSUNA DUPLICAZIONE DEL PUNTO INIZIALE
+    // ============================================================
+
+    cout << "[Test 2] Nessuna duplicazione della sezione iniziale"
+         << endl;
+
+
+    const SezionePista& primaSezione =
+        sezioni.front();
+
+    const SezionePista& ultimaSezione =
+        sezioni.back();
+
+
+    // La prima sezione è a posizione 0.0.
     assert(
         puntoCorretto(
-            sezioni[4].getPuntoSinistro(),
-            100.0,
+            primaSezione.getPuntoSinistro(),
+            0.0,
             0.0
         )
     );
 
+
+    // L'ultima è a posizione 0.75,
+    // quindi NON deve coincidere con la prima.
     assert(
-        puntoCorretto(
-            sezioni[4].getPuntoDestro(),
-            100.0,
-            10.0
+        !puntoCorretto(
+            ultimaSezione.getPuntoSinistro(),
+            0.0,
+            0.0
         )
     );
 
 
-    cout << "Prima sezione:   (0,0) -> (0,10)" << endl;
-    cout << "Sezione centrale: (50,0) -> (50,10)" << endl;
-    cout << "Ultima sezione:  (100,0) -> (100,10)" << endl;
+    cout << "Prima sezione: ("
+         << primaSezione.getPuntoSinistro().getX()
+         << ","
+         << primaSezione.getPuntoSinistro().getY()
+         << ")"
+         << endl;
 
-    cout << "[OK] Estremi e centro corretti.\n"
+    cout << "Ultima sezione: ("
+         << ultimaSezione.getPuntoSinistro().getX()
+         << ","
+         << ultimaSezione.getPuntoSinistro().getY()
+         << ")"
+         << endl;
+
+
+    cout << "[OK] Il punto iniziale non viene duplicato.\n"
          << endl;
 
 
 
     // ============================================================
-    // TEST 3 - NUMERO DIFFERENTE DI PUNTI NEI DUE BORDI
+    // TEST 3 - 8 SEZIONI: VERTICI E PUNTI MEDI
     // ============================================================
 
-    cout << "[Test 3] Bordi con numero differente di punti"
-         << endl;
+    cout << "[Test 3] Circuito quadrato con 8 sezioni" << endl;
 
 
-    Pista pistaBordiDifferenti;
-
-
-    // Bordo sinistro con 3 punti.
-    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(0.0, 0.0)
-    );
-
-    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(50.0, 0.0)
-    );
-
-    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(100.0, 0.0)
-    );
-
-
-    // Bordo destro con solamente 2 punti.
-    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
-        Punto2D(0.0, 10.0)
-    );
-
-    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
-        Punto2D(100.0, 10.0)
-    );
-
-
-    vector<SezionePista> sezioniBordiDifferenti =
+    vector<SezionePista> ottoSezioni =
         discretizzatore.discretizza(
-            pistaBordiDifferenti,
-            5
+            pistaQuadrata,
+            8
         );
 
 
-    assert(sezioniBordiDifferenti.size() == 5);
+    assert(ottoSezioni.size() == 8);
 
 
-    for (int i = 0; i < 5; i++) {
+    // Perimetro = 400
+    //
+    // Ogni sezione è distante:
+    //
+    // 400 / 8 = 50
+    //
+    // Quindi sul bordo sinistro ci aspettiamo:
+    //
+    // (0,0)
+    // (50,0)
+    // (100,0)
+    // (100,50)
+    // (100,100)
+    // (50,100)
+    // (0,100)
+    // (0,50)
 
-        const Punto2D& sinistro =
-            sezioniBordiDifferenti[i].getPuntoSinistro();
+    const double xAttese[8] = {
+        0.0,
+        50.0,
+        100.0,
+        100.0,
+        100.0,
+        50.0,
+        0.0,
+        0.0
+    };
 
-        const Punto2D& destro =
-            sezioniBordiDifferenti[i].getPuntoDestro();
+    const double yAttese[8] = {
+        0.0,
+        0.0,
+        0.0,
+        50.0,
+        100.0,
+        100.0,
+        100.0,
+        50.0
+    };
+
+
+    for (int i = 0; i < 8; i++) {
+
+        const Punto2D& punto =
+            ottoSezioni[i].getPuntoSinistro();
 
 
         cout << "Sezione " << i
-             << ": (" << sinistro.getX()
-             << "," << sinistro.getY()
-             << ") -> ("
-             << destro.getX()
-             << "," << destro.getY()
+             << ": ("
+             << punto.getX()
+             << ","
+             << punto.getY()
              << ")"
              << endl;
 
 
         assert(
             puntoCorretto(
-                sinistro,
-                coordinateXAttese[i],
-                0.0
-            )
-        );
-
-
-        assert(
-            puntoCorretto(
-                destro,
-                coordinateXAttese[i],
-                10.0
+                punto,
+                xAttese[i],
+                yAttese[i]
             )
         );
     }
 
 
-    cout << "Punti bordo sinistro: 3" << endl;
-    cout << "Punti bordo destro: 2" << endl;
-
-    cout << "[OK] I bordi possono avere numeri differenti di punti.\n"
+    cout << "[OK] Interpolazione lungo tutto il circuito corretta.\n"
          << endl;
 
 
 
     // ============================================================
-    // TEST 4 - SEGMENTI DI LUNGHEZZA DIFFERENTE
+    // TEST 4 - CONTROLLO DEL SEGMENTO DI CHIUSURA
     // ============================================================
 
-    cout << "[Test 4] Segmenti di lunghezza differente" << endl;
+    cout << "[Test 4] Utilizzo del segmento ultimo -> primo" << endl;
 
 
-    Pista pistaSegmentiDifferenti;
-
-
-    // Il bordo sinistro contiene un punto a x = 10,
-    // ma la metà della sua lunghezza totale rimane x = 50.
+    // Con 8 sezioni, l'ultima posizione è:
     //
-    // (0,0) -> (10,0) -----------------> (100,0)
+    // 7 / 8 = 0.875
+    //
+    // Sul quadrato corrisponde a metà del segmento:
+    //
+    // (0,100) -> (0,0)
+    //
+    // quindi deve essere:
+    //
+    // (0,50)
 
-    pistaSegmentiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(0.0, 0.0)
-    );
-
-    pistaSegmentiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(10.0, 0.0)
-    );
-
-    pistaSegmentiDifferenti.aggiungiPuntoBordoSinistro(
-        Punto2D(100.0, 0.0)
-    );
-
-
-    pistaSegmentiDifferenti.aggiungiPuntoBordoDestro(
-        Punto2D(0.0, 10.0)
-    );
-
-    pistaSegmentiDifferenti.aggiungiPuntoBordoDestro(
-        Punto2D(100.0, 10.0)
-    );
+    const Punto2D& ultimoPunto =
+        ottoSezioni[7].getPuntoSinistro();
 
 
-    vector<SezionePista> treSezioni =
-        discretizzatore.discretizza(
-            pistaSegmentiDifferenti,
-            3
-        );
-
-
-    assert(treSezioni.size() == 3);
-
-
-    // La sezione centrale corrisponde al 50%
-    // della lunghezza del bordo.
-    const SezionePista& sezioneCentrale =
-        treSezioni[1];
-
-
-    cout << "Punto centrale bordo sinistro: ("
-         << sezioneCentrale.getPuntoSinistro().getX()
+    cout << "Ultimo punto discretizzato: ("
+         << ultimoPunto.getX()
          << ","
-         << sezioneCentrale.getPuntoSinistro().getY()
-         << ")"
-         << endl;
-
-    cout << "Punto centrale bordo destro: ("
-         << sezioneCentrale.getPuntoDestro().getX()
-         << ","
-         << sezioneCentrale.getPuntoDestro().getY()
+         << ultimoPunto.getY()
          << ")"
          << endl;
 
 
     assert(
         puntoCorretto(
-            sezioneCentrale.getPuntoSinistro(),
-            50.0,
+            ultimoPunto,
+            0.0,
+            50.0
+        )
+    );
+
+
+    cout << "[OK] Il segmento tra ultimo e primo punto viene utilizzato.\n"
+         << endl;
+
+
+
+    // ============================================================
+    // TEST 5 - NUMERO DIFFERENTE DI PUNTI SUI DUE BORDI
+    // ============================================================
+
+    cout << "[Test 5] Bordi con numero differente di punti"
+         << endl;
+
+
+    Pista pistaBordiDifferenti;
+
+
+    // Bordo sinistro:
+    // quadrato con 4 punti.
+
+    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
+        Punto2D(0.0, 0.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
+        Punto2D(100.0, 0.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
+        Punto2D(100.0, 100.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoSinistro(
+        Punto2D(0.0, 100.0)
+    );
+
+
+    // Bordo destro:
+    // stessa forma, ma con punti intermedi aggiuntivi.
+    //
+    // In questo modo verifichiamo che il discretizzatore
+    // lavori sulla lunghezza e non sul numero di punti.
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(0.0, 10.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(50.0, 10.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(100.0, 10.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(100.0, 60.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(100.0, 110.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(50.0, 110.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(0.0, 110.0)
+    );
+
+    pistaBordiDifferenti.aggiungiPuntoBordoDestro(
+        Punto2D(0.0, 60.0)
+    );
+
+
+    vector<SezionePista> sezioniDifferenti =
+        discretizzatore.discretizza(
+            pistaBordiDifferenti,
+            4
+        );
+
+
+    assert(sezioniDifferenti.size() == 4);
+
+
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[0].getPuntoSinistro(),
+            0.0,
             0.0
         )
     );
 
     assert(
         puntoCorretto(
-            sezioneCentrale.getPuntoDestro(),
-            50.0,
+            sezioniDifferenti[0].getPuntoDestro(),
+            0.0,
             10.0
         )
     );
 
 
-    cout << "[OK] La discretizzazione utilizza la lunghezza del bordo,"
-         << endl;
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[1].getPuntoSinistro(),
+            100.0,
+            0.0
+        )
+    );
 
-    cout << "     non semplicemente gli indici dei punti.\n"
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[1].getPuntoDestro(),
+            100.0,
+            10.0
+        )
+    );
+
+
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[2].getPuntoSinistro(),
+            100.0,
+            100.0
+        )
+    );
+
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[2].getPuntoDestro(),
+            100.0,
+            110.0
+        )
+    );
+
+
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[3].getPuntoSinistro(),
+            0.0,
+            100.0
+        )
+    );
+
+    assert(
+        puntoCorretto(
+            sezioniDifferenti[3].getPuntoDestro(),
+            0.0,
+            110.0
+        )
+    );
+
+
+    cout << "Punti bordo sinistro: 4" << endl;
+    cout << "Punti bordo destro: 8" << endl;
+
+    cout << "[OK] Il numero differente di punti non modifica "
+            "la corrispondenza delle sezioni.\n"
          << endl;
 
 
 
     // ============================================================
-    // TEST 5 - NUMERO DI SEZIONI NON VALIDO
+    // TEST 6 - NUMERO DI SEZIONI NON VALIDO
     // ============================================================
 
-    cout << "[Test 5] Numero di sezioni minore di 2" << endl;
+    cout << "[Test 6] Numero di sezioni minore di 2" << endl;
 
 
     bool eccezioneRicevuta = false;
@@ -428,7 +595,7 @@ void eseguiTestDiscretizzatorePista() {
     try {
 
         discretizzatore.discretizza(
-            pistaSemplice,
+            pistaQuadrata,
             1
         );
 
@@ -452,10 +619,10 @@ void eseguiTestDiscretizzatorePista() {
 
 
     // ============================================================
-    // TEST 6 - BORDO SINISTRO CON MENO DI DUE PUNTI
+    // TEST 7 - BORDO CON MENO DI 2 PUNTI
     // ============================================================
 
-    cout << "[Test 6] Bordo sinistro con meno di 2 punti"
+    cout << "[Test 7] Bordo sinistro con meno di 2 punti"
          << endl;
 
 
@@ -483,7 +650,7 @@ void eseguiTestDiscretizzatorePista() {
 
         discretizzatore.discretizza(
             pistaBordoInsufficiente,
-            5
+            4
         );
 
     }
@@ -506,18 +673,15 @@ void eseguiTestDiscretizzatorePista() {
 
 
     // ============================================================
-    // TEST 7 - BORDO DI LUNGHEZZA ZERO
+    // TEST 8 - BORDO DI LUNGHEZZA ZERO
     // ============================================================
 
-    cout << "[Test 7] Bordo di lunghezza zero" << endl;
+    cout << "[Test 8] Bordo di lunghezza zero" << endl;
 
 
     Pista pistaLunghezzaZero;
 
 
-    // Due punti uguali:
-    // il bordo contiene formalmente due punti,
-    // ma la sua lunghezza totale è zero.
     pistaLunghezzaZero.aggiungiPuntoBordoSinistro(
         Punto2D(0.0, 0.0)
     );
@@ -543,7 +707,7 @@ void eseguiTestDiscretizzatorePista() {
 
         discretizzatore.discretizza(
             pistaLunghezzaZero,
-            5
+            4
         );
 
     }
@@ -573,4 +737,4 @@ void eseguiTestDiscretizzatorePista() {
     cout << " TUTTI I TEST DISCRETIZZATORE PISTA SUPERATI!" << endl;
     cout << "==============================================\n"
          << endl;
-} 
+}

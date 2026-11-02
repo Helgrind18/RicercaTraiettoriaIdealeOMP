@@ -28,10 +28,22 @@ void eseguiTestVeicolo() {
     assert(veicoloDefault.getPotenzaMassima() == 0.0);
     assert(veicoloDefault.getAccelerazioneMassima() == 0.0);
     assert(veicoloDefault.getDecelerazioneMassima() == 0.0);
+
     assert(
         veicoloDefault.getCoefficienteResistenzaAerodinamica()
         == 0.0
     );
+
+    assert(
+        veicoloDefault.getVelocitaMassima()
+        == 0.0
+    );
+
+    assert(
+        veicoloDefault.getAccelerazioneLateraleMassima()
+        == 0.0
+    );
+
 
     cout << "  Massa: "
          << veicoloDefault.getMassa()
@@ -53,7 +65,16 @@ void eseguiTestVeicolo() {
          << veicoloDefault.getCoefficienteResistenzaAerodinamica()
          << endl;
 
+    cout << "  Velocita massima: "
+         << veicoloDefault.getVelocitaMassima()
+         << endl;
+
+    cout << "  Accelerazione laterale massima: "
+         << veicoloDefault.getAccelerazioneLateraleMassima()
+         << endl;
+
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -64,22 +85,40 @@ void eseguiTestVeicolo() {
 
     for (int i = 0; i < 4; i++) {
 
-        const Gomma& gomma = veicoloDefault.getGomma(i);
+        const Gomma& gomma =
+            veicoloDefault.getGomma(i);
 
-        cout << "  Gomma posizione " << i
-             << " -> id = " << gomma.getId()
-             << ", grip = " << gomma.getCoefficienteGrip()
-             << ", mescola = " << gomma.toString()
+        cout << "  Gomma posizione "
+             << i
+             << " -> id = "
+             << gomma.getId()
+             << ", grip = "
+             << gomma.getCoefficienteGrip()
+             << ", mescola = "
+             << gomma.toString()
              << endl;
 
         assert(gomma.getId() == i);
-        assert(gomma.getTipo() == TipoGomma::SOFT);
-        assert(gomma.getCoefficienteGrip() == 1.0);
-        assert(gomma.toString() == "SOFT");
+
+        assert(
+            gomma.getTipo()
+            == TipoGomma::SOFT
+        );
+
+        assert(
+            gomma.getCoefficienteGrip()
+            == 1.0
+        );
+
+        assert(
+            gomma.toString()
+            == "SOFT"
+        );
     }
 
     cout << "  -> Tutte le gomme sono correttamente inizializzate\n"
          << endl;
+
 
 
     // ============================================================
@@ -89,29 +128,83 @@ void eseguiTestVeicolo() {
     cout << "[TEST 3] Costruttore parametrico" << endl;
 
     array<Gomma, 4> gomme = {
-        Gomma(0, TipoGomma::MEDIUM, 0.90),
-        Gomma(1, TipoGomma::MEDIUM, 0.90),
-        Gomma(2, TipoGomma::MEDIUM, 0.90),
-        Gomma(3, TipoGomma::MEDIUM, 0.90)
+
+        Gomma(
+            0,
+            TipoGomma::MEDIUM,
+            0.90
+        ),
+
+        Gomma(
+            1,
+            TipoGomma::MEDIUM,
+            0.90
+        ),
+
+        Gomma(
+            2,
+            TipoGomma::MEDIUM,
+            0.90
+        ),
+
+        Gomma(
+            3,
+            TipoGomma::MEDIUM,
+            0.90
+        )
     };
 
+
     Veicolo veicolo(
-        800.0,
-        500000.0,
-        12.0,
-        15.0,
-        0.90,
+
+        800.0,      // massa
+        500000.0,   // potenza massima
+        12.0,       // accelerazione massima
+        15.0,       // decelerazione massima
+        0.90,       // coefficiente resistenza aerodinamica
+
+        95.0,       // velocita massima
+        30.0,       // accelerazione laterale massima
+
         gomme
     );
 
-    assert(veicolo.getMassa() == 800.0);
-    assert(veicolo.getPotenzaMassima() == 500000.0);
-    assert(veicolo.getAccelerazioneMassima() == 12.0);
-    assert(veicolo.getDecelerazioneMassima() == 15.0);
+
+    assert(
+        veicolo.getMassa()
+        == 800.0
+    );
+
+    assert(
+        veicolo.getPotenzaMassima()
+        == 500000.0
+    );
+
+    assert(
+        veicolo.getAccelerazioneMassima()
+        == 12.0
+    );
+
+    assert(
+        veicolo.getDecelerazioneMassima()
+        == 15.0
+    );
+
     assert(
         veicolo.getCoefficienteResistenzaAerodinamica()
         == 0.90
     );
+
+    assert(
+        veicolo.getVelocitaMassima()
+        == 95.0
+    );
+
+    assert(
+        veicolo.getAccelerazioneLateraleMassima()
+        == 30.0
+    );
+
 
     cout << "  Massa: "
          << veicolo.getMassa()
@@ -133,7 +226,16 @@ void eseguiTestVeicolo() {
          << veicolo.getCoefficienteResistenzaAerodinamica()
          << endl;
 
+    cout << "  Velocita massima: "
+         << veicolo.getVelocitaMassima()
+         << endl;
+
+    cout << "  Accelerazione laterale massima: "
+         << veicolo.getAccelerazioneLateraleMassima()
+         << endl;
+
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -142,25 +244,48 @@ void eseguiTestVeicolo() {
 
     cout << "[TEST 4] getGomme()" << endl;
 
-    const array<Gomma, 4>& gommeVeicolo = veicolo.getGomme();
+    const array<Gomma, 4>& gommeVeicolo =
+        veicolo.getGomme();
 
     for (int i = 0; i < 4; i++) {
 
-        const Gomma& gomma = gommeVeicolo[i];
+        const Gomma& gomma =
+            gommeVeicolo[i];
 
-        assert(gomma.getId() == i);
-        assert(gomma.getTipo() == TipoGomma::MEDIUM);
-        assert(gomma.getCoefficienteGrip() == 0.90);
-        assert(gomma.toString() == "MEDIUM");
+        assert(
+            gomma.getId()
+            == i
+        );
 
-        cout << "  Gomma posizione " << i
-             << " -> id = " << gomma.getId()
-             << ", grip = " << gomma.getCoefficienteGrip()
-             << ", mescola = " << gomma.toString()
+        assert(
+            gomma.getTipo()
+            == TipoGomma::MEDIUM
+        );
+
+        assert(
+            gomma.getCoefficienteGrip()
+            == 0.90
+        );
+
+        assert(
+            gomma.toString()
+            == "MEDIUM"
+        );
+
+
+        cout << "  Gomma posizione "
+             << i
+             << " -> id = "
+             << gomma.getId()
+             << ", grip = "
+             << gomma.getCoefficienteGrip()
+             << ", mescola = "
+             << gomma.toString()
              << endl;
     }
 
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -169,20 +294,70 @@ void eseguiTestVeicolo() {
 
     cout << "[TEST 5] Setter del veicolo" << endl;
 
-    veicolo.setMassa(850.0);
-    veicolo.setPotenzaMassima(550000.0);
-    veicolo.setAccelerazioneMassima(13.0);
-    veicolo.setDecelerazioneMassima(16.0);
-    veicolo.setCoefficienteResistenzaAerodinamica(0.95);
+    veicolo.setMassa(
+        850.0
+    );
 
-    assert(veicolo.getMassa() == 850.0);
-    assert(veicolo.getPotenzaMassima() == 550000.0);
-    assert(veicolo.getAccelerazioneMassima() == 13.0);
-    assert(veicolo.getDecelerazioneMassima() == 16.0);
+    veicolo.setPotenzaMassima(
+        550000.0
+    );
+
+    veicolo.setAccelerazioneMassima(
+        13.0
+    );
+
+    veicolo.setDecelerazioneMassima(
+        16.0
+    );
+
+    veicolo.setCoefficienteResistenzaAerodinamica(
+        0.95
+    );
+
+    veicolo.setVelocitaMassima(
+        100.0
+    );
+
+    veicolo.setAccelerazioneLateraleMassima(
+        32.0
+    );
+
+
+    assert(
+        veicolo.getMassa()
+        == 850.0
+    );
+
+    assert(
+        veicolo.getPotenzaMassima()
+        == 550000.0
+    );
+
+    assert(
+        veicolo.getAccelerazioneMassima()
+        == 13.0
+    );
+
+    assert(
+        veicolo.getDecelerazioneMassima()
+        == 16.0
+    );
+
     assert(
         veicolo.getCoefficienteResistenzaAerodinamica()
         == 0.95
     );
+
+    assert(
+        veicolo.getVelocitaMassima()
+        == 100.0
+    );
+
+    assert(
+        veicolo.getAccelerazioneLateraleMassima()
+        == 32.0
+    );
+
 
     cout << "  Nuova massa: "
          << veicolo.getMassa()
@@ -204,7 +379,16 @@ void eseguiTestVeicolo() {
          << veicolo.getCoefficienteResistenzaAerodinamica()
          << endl;
 
+    cout << "  Nuova velocita massima: "
+         << veicolo.getVelocitaMassima()
+         << endl;
+
+    cout << "  Nuova accelerazione laterale massima: "
+         << veicolo.getAccelerazioneLateraleMassima()
+         << endl;
+
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -214,23 +398,38 @@ void eseguiTestVeicolo() {
     cout << "[TEST 6] Cambio di una gomma valido" << endl;
 
     Gomma nuovaGomma(
+
         2,
         TipoGomma::MEDIUM,
         1.0
     );
 
-    veicolo.cambiaGomma(2, nuovaGomma);
+    veicolo.cambiaGomma(
+        2,
+        nuovaGomma
+    );
 
-    assert(veicolo.getGomma(2).getId() == 2);
-    assert(veicolo.getGomma(2).getTipo() == TipoGomma::MEDIUM);
+
+    assert(
+        veicolo.getGomma(2).getId()
+        == 2
+    );
+
+    assert(
+        veicolo.getGomma(2).getTipo()
+        == TipoGomma::MEDIUM
+    );
+
     assert(
         veicolo.getGomma(2).getCoefficienteGrip()
         == 1.0
     );
+
     assert(
         veicolo.getGomma(2).toString()
         == "MEDIUM"
     );
+
 
     cout << "  Gomma 2 sostituita:"
          << endl;
@@ -250,6 +449,7 @@ void eseguiTestVeicolo() {
     cout << "  -> OK\n" << endl;
 
 
+
     // ============================================================
     // TEST 7 - GETGOMMA CON ID NON VALIDO
     // ============================================================
@@ -259,7 +459,9 @@ void eseguiTestVeicolo() {
     bool eccezioneRicevuta = false;
 
     try {
+
         veicolo.getGomma(5);
+
     }
     catch (const invalid_argument& errore) {
 
@@ -275,8 +477,9 @@ void eseguiTestVeicolo() {
     cout << "  -> OK\n" << endl;
 
 
+
     // ============================================================
-    // TEST 8 - COSTRUTTORE CON PARAMETRI NON VALIDI
+    // TEST 8 - COSTRUTTORE CON MASSA NON VALIDA
     // ============================================================
 
     cout << "[TEST 8] Costruttore con massa non valida" << endl;
@@ -286,13 +489,19 @@ void eseguiTestVeicolo() {
     try {
 
         Veicolo veicoloErrato(
+
             -100.0,
             500000.0,
             12.0,
             15.0,
             0.90,
+
+            95.0,
+            30.0,
+
             gomme
         );
+
     }
     catch (const invalid_argument& errore) {
 
@@ -306,6 +515,7 @@ void eseguiTestVeicolo() {
     assert(eccezioneRicevuta);
 
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -315,24 +525,51 @@ void eseguiTestVeicolo() {
     cout << "[TEST 9] Costruttore con ID gomme non coerenti" << endl;
 
     array<Gomma, 4> gommeIdErrati = {
-        Gomma(1, TipoGomma::SOFT, 1.0),
-        Gomma(0, TipoGomma::SOFT, 1.0),
-        Gomma(2, TipoGomma::SOFT, 1.0),
-        Gomma(3, TipoGomma::SOFT, 1.0)
+
+        Gomma(
+            1,
+            TipoGomma::SOFT,
+            1.0
+        ),
+
+        Gomma(
+            0,
+            TipoGomma::SOFT,
+            1.0
+        ),
+
+        Gomma(
+            2,
+            TipoGomma::SOFT,
+            1.0
+        ),
+
+        Gomma(
+            3,
+            TipoGomma::SOFT,
+            1.0
+        )
     };
+
 
     eccezioneRicevuta = false;
 
     try {
 
         Veicolo veicoloErrato(
+
             800.0,
             500000.0,
             12.0,
             15.0,
             0.90,
+
+            95.0,
+            30.0,
+
             gommeIdErrati
         );
+
     }
     catch (const invalid_argument& errore) {
 
@@ -346,6 +583,7 @@ void eseguiTestVeicolo() {
     assert(eccezioneRicevuta);
 
     cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================
@@ -355,24 +593,51 @@ void eseguiTestVeicolo() {
     cout << "[TEST 10] Costruttore con mescole differenti" << endl;
 
     array<Gomma, 4> gommeMiste = {
-        Gomma(0, TipoGomma::SOFT, 1.0),
-        Gomma(1, TipoGomma::SOFT, 1.0),
-        Gomma(2, TipoGomma::MEDIUM, 1.0),
-        Gomma(3, TipoGomma::SOFT, 1.0)
+
+        Gomma(
+            0,
+            TipoGomma::SOFT,
+            1.0
+        ),
+
+        Gomma(
+            1,
+            TipoGomma::SOFT,
+            1.0
+        ),
+
+        Gomma(
+            2,
+            TipoGomma::MEDIUM,
+            1.0
+        ),
+
+        Gomma(
+            3,
+            TipoGomma::SOFT,
+            1.0
+        )
     };
+
 
     eccezioneRicevuta = false;
 
     try {
 
         Veicolo veicoloErrato(
+
             800.0,
             500000.0,
             12.0,
             15.0,
             0.90,
+
+            95.0,
+            30.0,
+
             gommeMiste
         );
+
     }
     catch (const invalid_argument& errore) {
 
@@ -388,6 +653,7 @@ void eseguiTestVeicolo() {
     cout << "  -> OK\n" << endl;
 
 
+
     // ============================================================
     // TEST 11 - CAMBIO GOMMA CON ID NON COERENTE
     // ============================================================
@@ -395,10 +661,12 @@ void eseguiTestVeicolo() {
     cout << "[TEST 11] Cambio gomma con id non coerente" << endl;
 
     Gomma gommaIdErrato(
+
         3,
         TipoGomma::MEDIUM,
         1.0
     );
+
 
     eccezioneRicevuta = false;
 
@@ -410,6 +678,7 @@ void eseguiTestVeicolo() {
             2,
             gommaIdErrato
         );
+
     }
     catch (const invalid_argument& errore) {
 
@@ -425,6 +694,7 @@ void eseguiTestVeicolo() {
     cout << "  -> OK\n" << endl;
 
 
+
     // ============================================================
     // TEST 12 - CAMBIO GOMMA CON MESCOLA DIVERSA
     // ============================================================
@@ -432,10 +702,12 @@ void eseguiTestVeicolo() {
     cout << "[TEST 12] Cambio gomma con mescola diversa" << endl;
 
     Gomma gommaSoft(
+
         1,
         TipoGomma::SOFT,
         1.0
     );
+
 
     eccezioneRicevuta = false;
 
@@ -446,6 +718,7 @@ void eseguiTestVeicolo() {
             1,
             gommaSoft
         );
+
     }
     catch (const invalid_argument& errore) {
 
@@ -459,6 +732,89 @@ void eseguiTestVeicolo() {
     assert(eccezioneRicevuta);
 
     cout << "  -> OK\n" << endl;
+
+
+
+    // ============================================================
+    // TEST 13 - VELOCITA MASSIMA NON VALIDA
+    // ============================================================
+
+    cout << "[TEST 13] Costruttore con velocita massima non valida"
+         << endl;
+
+    eccezioneRicevuta = false;
+
+    try {
+
+        Veicolo veicoloErrato(
+
+            800.0,
+            500000.0,
+            12.0,
+            15.0,
+            0.90,
+
+            -10.0,
+            30.0,
+
+            gomme
+        );
+
+    }
+    catch (const invalid_argument& errore) {
+
+        eccezioneRicevuta = true;
+
+        cout << "  Eccezione correttamente ricevuta: "
+             << errore.what()
+             << endl;
+    }
+
+    assert(eccezioneRicevuta);
+
+    cout << "  -> OK\n" << endl;
+
+
+
+    // ============================================================
+    // TEST 14 - ACCELERAZIONE LATERALE NON VALIDA
+    // ============================================================
+
+    cout << "[TEST 14] Accelerazione laterale massima non valida"
+         << endl;
+
+    eccezioneRicevuta = false;
+
+    try {
+
+        Veicolo veicoloErrato(
+
+            800.0,
+            500000.0,
+            12.0,
+            15.0,
+            0.90,
+
+            95.0,
+            -5.0,
+
+            gomme
+        );
+
+    }
+    catch (const invalid_argument& errore) {
+
+        eccezioneRicevuta = true;
+
+        cout << "  Eccezione correttamente ricevuta: "
+             << errore.what()
+             << endl;
+    }
+
+    assert(eccezioneRicevuta);
+
+    cout << "  -> OK\n" << endl;
+
 
 
     // ============================================================

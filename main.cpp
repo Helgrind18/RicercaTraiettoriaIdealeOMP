@@ -4,6 +4,8 @@
 #include "TestSezionePista.hpp"
 #include "TestDiscretizzatorePista.hpp"
 #include "TestTraiettoria.hpp"
+#include "TestGeneratoreTraiettorie.hpp"
+#include "TestValutatoreTraiettoria.hpp"
 int main() {
 
     //eseguiTestPunto2D();
@@ -11,6 +13,8 @@ int main() {
     //eseguiTestVeicolo();
     //eseguiTestPista();
     //eseguiTestDiscretizzatorePista();
-    eseguiTestTraiettoria();
+    //eseguiTestTraiettoria();
+    //eseguiTestGeneratoreTraiettorie();
+    eseguiTestValutatoreTraiettoria();
     return 0;
 }
