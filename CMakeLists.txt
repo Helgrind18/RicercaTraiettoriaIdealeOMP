@@ -44,9 +44,49 @@ add_executable(RicercaTraiettoriaIdealeOMP
         src/ValutatoreTraiettoria.cpp
         test/TestValutatoreTraiettoria.hpp
         test/TestValutatoreTraiettoria.cpp
+        include/AlgoritmoGenetico.hpp
+        src/AlgoritmoGenetico.cpp
+        test/TestAlgoritmoGenetico.hpp
+        test/TestAlgoritmoGenetico.cpp
 )
 
 target_include_directories(RicercaTraiettoriaIdealeOMP PRIVATE
         include
         test
 )
+
+# ===================== APEX LAB · GUI QT 6 =====================
+# Aggiungi questo blocco UNA SOLA VOLTA alla fine del CMakeLists.txt esistente.
+# Non tocca il target originale dei tuoi test.
+find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
+
+# Usa tutti i sorgenti del motore C++ gia' presenti nella cartella src,
+# escludendo un eventuale main.cpp (la GUI ha il suo main separato).
+file(GLOB APEX_CORE_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+)
+list(FILTER APEX_CORE_SOURCES EXCLUDE REGEX "/main\\.cpp$")
+
+add_executable(RicercaTraiettoriaGUI
+    gui/main_gui.cpp
+    gui/ApexMainWindow.hpp
+    gui/ApexMainWindow.cpp
+    gui/MotoreApex.hpp
+    gui/MotoreApex.cpp
+    gui/VistaPista.hpp
+    gui/VistaPista.cpp
+    gui/GraficoGeni.hpp
+    gui/GraficoGeni.cpp
+    ${APEX_CORE_SOURCES}
+)
+
+target_include_directories(RicercaTraiettoriaGUI PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gui"
+)
+target_link_libraries(RicercaTraiettoriaGUI PRIVATE Qt6::Widgets)
+target_compile_features(RicercaTraiettoriaGUI PRIVATE cxx_std_20)
+target_compile_definitions(RicercaTraiettoriaGUI PRIVATE
+    APEX_PISTE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/gui/data"
+)
+# =================== FINE APEX LAB GUI ========================

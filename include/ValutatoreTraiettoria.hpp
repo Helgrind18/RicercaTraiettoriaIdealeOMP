@@ -7,6 +7,7 @@
 #include "Punto2D.hpp"
 
 #include <vector>
+#include <stdexcept>
 using namespace std;
 // Si occupa di valutare una Traiettoria percorsa da un determinato
 // Veicolo sulla pista discretizzata.
@@ -37,6 +38,24 @@ public:
     //
     // Restituisce il tempo sul giro in secondi.
     double valutaTraiettoria(const Traiettoria& traiettoria,const vector<SezionePista>& sezioni,const Veicolo& veicolo) const;
+
+    // Restituisce la stessa curvatura non firmata (1/m) usata dal modello
+    // per calcolare il limite di velocita in curva.
+    // I punti sono periodici: il primo e l'ultimo sono adiacenti.
+    // Utile per confrontare nel frontend i picchi di curvatura e velocita.
+    vector<double> profiloCurvaturaPerGrafici(const Traiettoria& traiettoria,
+                                              const vector<SezionePista>& sezioni) const;
+
+    // APEX_LAB: profilo velocita per grafici
+    // Riutilizza ESATTAMENTE il profilo del ValutatoreTraiettoria; non modifica lo stato.
+    vector<double> profiloVelocitaPerGrafici(const Traiettoria& traiettoria,
+                                              const vector<SezionePista>& sezioni,
+                                              const Veicolo& veicolo) const {
+        if (sezioni.size() < 3 ||
+            static_cast<size_t>(traiettoria.getNumeroPosizioni()) != sezioni.size())
+            throw std::invalid_argument("Numero sezioni/posizioni non valido per il profilo");
+        return calcolaProfiloVelocita(traiettoria.calcolaPunti(sezioni), veicolo);
+    }
 
 private:
     // Calcola la lunghezza totale della traiettoria

@@ -1,0 +1,54 @@
+#ifndef APEX_LAB_MOTORE_APEX_HPP
+#define APEX_LAB_MOTORE_APEX_HPP
+
+#include <QPointF>
+#include <QVector>
+#include <QString>
+
+struct ParametriApex {
+    QString circuito = "spa";
+    int sezioni = 80;
+    int popolazione = 80;
+    int generazioni = 25;
+    double crossover = 0.80;
+    double mutazione = 0.05;
+    double intensita = 0.10;
+    int torneo = 3;
+    int elite = 4;
+    unsigned int seed = 2026;
+
+    double massaKg = 798.0;
+    double potenzaKW = 650.0;
+    double accelerazione = 10.0;
+    double frenata = 15.0;
+    double cd = 0.9;
+    double areaM2 = 1.5;
+    double velocitaKmh = 315.0;
+    double accelerazioneLaterale = 18.0;
+    double grip = 0.95;
+};
+
+struct GeometriaApex {
+    QVector<QPointF> centro;
+    QVector<QPointF> sinistro;
+    QVector<QPointF> destro;
+};
+
+struct RisultatoApex {
+    ParametriApex parametri;
+    GeometriaApex geometria;
+    QVector<QPointF> iniziale;
+    QVector<QPointF> ottimizzata;
+    QVector<double> geniIniziali;
+    QVector<double> geniOttimizzati;
+    double tempoIniziale = 0.0;
+    double tempoFinale = 0.0;
+    double durataMs = 0.0;
+};
+
+// Punto di accesso al motore C++ esistente: non cambia nessuna classe del core.
+QVector<QPointF> caricaCentroPista(const QString &percorso);
+GeometriaApex creaGeometriaPista(const QVector<QPointF> &centro, int sezioni, double larghezzaMetri = 12.0);
+RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fileCsv);
+
+#endif

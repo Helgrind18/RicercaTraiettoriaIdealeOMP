@@ -32,9 +32,9 @@ public:
     // Costruisce il generatore utilizzando il seed specificato.
     explicit GeneratoreTraiettorie(unsigned int seed);
 
-    // Genera una singola traiettoria casuale contenente
-    // una posizione laterale per ogni sezione.
-    //
+    // Genera una singola traiettoria casuale REGOLARE:
+    // pochi controlli casuali, interpolazione B-spline cubica
+    // periodica, un gene per sezione (tutti in [0,1]).
     // numeroSezioni deve essere maggiore di zero.
     Traiettoria generaTraiettoriaCasuale(int numeroSezioni);
 

@@ -35,6 +35,25 @@ double ValutatoreTraiettoria::valutaTraiettoria(const Traiettoria &traiettoria, 
     return tempoGiro;
 }
 
+// Diagnostica di sola lettura: espone la curvatura gia' calcolata internamente.
+// Non modifica nessuna formula utilizzata per il tempo sul giro.
+vector<double> ValutatoreTraiettoria::profiloCurvaturaPerGrafici(
+    const Traiettoria &traiettoria, const vector<SezionePista> &sezioni) const {
+    if (sezioni.size() < 3 ||
+        static_cast<size_t>(traiettoria.getNumeroPosizioni()) != sezioni.size()) {
+        throw invalid_argument("Numero sezioni/posizioni non valido per la curvatura");
+    }
+    const vector<Punto2D> punti = traiettoria.calcolaPunti(sezioni);
+    vector<double> curvature;
+    curvature.reserve(punti.size());
+    for (size_t i = 0; i < punti.size(); ++i) {
+        const size_t precedente = (i + punti.size() - 1) % punti.size();
+        const size_t successivo = (i + 1) % punti.size();
+        curvature.push_back(calcolaCurvatura(punti[precedente], punti[i], punti[successivo]));
+    }
+    return curvature;
+}
+
 double ValutatoreTraiettoria::calcolaLunghezzaTraiettoria(const vector<Punto2D> &punti) const {
     double lunghezzaTraiettoria = 0.0;
     if (punti.empty()) {

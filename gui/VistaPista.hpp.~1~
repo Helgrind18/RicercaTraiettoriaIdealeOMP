@@ -1,0 +1,61 @@
+#ifndef APEX_LAB_VISTA_PISTA_HPP
+#define APEX_LAB_VISTA_PISTA_HPP
+
+#include "MotoreApex.hpp"
+#include <QWidget>
+#include <QTimer>
+#include <QRectF>
+
+class QPaintEvent;
+class QMouseEvent;
+class QWheelEvent;
+
+// Disegna un confronto leggibile tra la migliore traiettoria iniziale e
+// quella ottimizzata. L'amplificazione e' soltanto un effetto visivo:
+// geometria del motore, geni e tempi sul giro restano invariati.
+class VistaPista : public QWidget {
+public:
+    enum class ModalitaConfronto { Affiancato, Sovrapposto };
+
+    explicit VistaPista(QWidget *parent = nullptr);
+    void mostraGeometria(const GeometriaApex &geometria);
+    void mostraRisultato(const RisultatoApex &risultato);
+    void impostaVisibilita(bool iniziale, bool ottimizzata);
+    void impostaModalitaConfronto(ModalitaConfronto modalita);
+    void impostaAmplificazione(double fattore);
+    void avviaAnimazione(bool avvia);
+    void resetVista();
+    void modificaZoom(double fattore);
+    void centraSullaMassimaDifferenza();
+    void impostaVelocitaAnimazione(double velocita);
+    bool animazioneAttiva() const { return timer_.isActive(); }
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+
+private:
+    QRectF areaDisegno(const QPointF &posizione) const;
+    void applicaZoom(double fattore, const QPointF &punto);
+    GeometriaApex geometria_;
+    QVector<QPointF> iniziale_;
+    QVector<QPointF> ottimizzata_;
+    bool mostraIniziale_ = true;
+    bool mostraOttimizzata_ = true;
+    ModalitaConfronto modalita_ = ModalitaConfronto::Affiancato;
+    double amplificazione_ = 1.0;
+    double tempoIniziale_ = 0.0;
+    double tempoFinale_ = 0.0;
+    double zoom_ = 1.0;
+    QPointF spostamento_;
+    QPointF mouseUltimo_;
+    bool trascinando_ = false;
+    QTimer timer_;
+    double avanzamento_ = 0.0;
+    double velocitaAnimazione_ = 1.0;
+};
+#endif
