@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.3)
+cmake_minimum_required(VERSION 3.20)
 
 project(RicercaTraiettoriaIdealeOMP)
 
@@ -30,6 +30,8 @@ add_executable(RicercaTraiettoriaIdealeOMP
         test/TestSezionePista.cpp
         include/DiscretizzatorePista.hpp
         src/DiscretizzatorePista.cpp
+        include/InterpolatorePista.hpp
+        src/InterpolatorePista.cpp
         include/Traiettoria.hpp
         src/Traiettoria.cpp
         test/TestDiscretizzatorePista.hpp
@@ -90,3 +92,33 @@ target_compile_definitions(RicercaTraiettoriaGUI PRIVATE
     APEX_PISTE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/gui/data"
 )
 # =================== FINE APEX LAB GUI ========================
+
+# Test indipendente dalla GUI: controlla la spline su Spa e Monza.
+add_executable(TestInterpolatorePista
+    test/TestInterpolatorePista.cpp
+    include/InterpolatorePista.hpp
+    src/InterpolatorePista.cpp
+    include/Punto2D.hpp
+    src/Punto2D.cpp
+)
+target_include_directories(TestInterpolatorePista PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+enable_testing()
+add_test(NAME GeometriaPistaSpaMonza
+    COMMAND TestInterpolatorePista
+        "${CMAKE_CURRENT_SOURCE_DIR}/gui/data/spa.csv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gui/data/monza.csv"
+)
+
+# Test standalone: indipendenza tra geni e campioni di valutazione.
+add_executable(TestRisoluzioneIndipendente
+    test/TestRisoluzioneIndipendente.cpp
+    ${APEX_CORE_SOURCES}
+)
+target_include_directories(TestRisoluzioneIndipendente PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+add_test(NAME RisoluzioneIndipendente
+    COMMAND TestRisoluzioneIndipendente
+        "${CMAKE_CURRENT_SOURCE_DIR}/gui/data/spa.csv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/gui/data/monza.csv"
+)

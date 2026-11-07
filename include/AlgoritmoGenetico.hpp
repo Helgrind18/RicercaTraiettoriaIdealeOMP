@@ -34,6 +34,16 @@ using namespace std;
 // 6. elitismo
 // 7. creazione della nuova popolazione
 
+// Il risultato conserva gli individui ORIGINALI (geni) e i tempi
+// misurati con la stessa geometria di valutazione, senza una seconda
+// valutazione separata della popolazione iniziale nella GUI.
+struct RisultatoGenetico {
+    Traiettoria miglioreIniziale;
+    Traiettoria miglioreFinale;
+    double tempoIniziale = 0.0;
+    double tempoFinale = 0.0;
+};
+
 class AlgoritmoGenetico {
 private:
     // Numero di traiettorie presenti in ogni generazione.
@@ -115,9 +125,17 @@ private:
     vector<double> valutaPopolazione(
         const vector<Traiettoria> &popolazione,
         const vector<SezionePista> &sezioni,
-        const Veicolo &veicolo
+        const Veicolo &veicolo,
+        bool ricostruisciSpline
     ) const;
 
+    RisultatoGenetico ottimizzaInterno(
+        const vector<SezionePista>& sezioni,
+        const Veicolo& veicolo,
+        int numeroGeni,
+        bool ricostruisciSpline,
+        const std::function<void(int, int)>& progresso
+    );
 
     // Restituisce l'indice dell'individuo migliore
     // della popolazione.
@@ -286,6 +304,16 @@ public:
         const std::function<void(int, int)> &progresso
     );
 
+
+    // Nuovo ingresso per GUI: il numero di geni puo' differire dal
+    // numero di sezioni fisiche passate al valutatore.
+    // Conserva anche i risultati della prima generazione.
+    RisultatoGenetico ottimizzaConDettagli(
+        const vector<SezionePista>& sezioniValutazione,
+        const Veicolo& veicolo,
+        int numeroGeni,
+        const std::function<void(int, int)>& progresso = {}
+    );
 
     // Getter dei parametri principali dell'algoritmo.
 

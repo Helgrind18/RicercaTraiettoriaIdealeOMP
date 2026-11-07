@@ -35,7 +35,7 @@ private:
     QTabWidget *pagine_ = nullptr;
     QComboBox *circuito_ = nullptr;
     QComboBox *modalitaVista_ = nullptr, *amplificazioneVista_ = nullptr;
-    QSpinBox *sezioni_ = nullptr, *popolazione_ = nullptr, *generazioni_ = nullptr;
+    QSpinBox *sezioni_ = nullptr, *campioniValutazione_ = nullptr, *popolazione_ = nullptr, *generazioni_ = nullptr;
     QSpinBox *torneo_ = nullptr, *elite_ = nullptr, *seed_ = nullptr;
     QDoubleSpinBox *crossover_ = nullptr, *mutazione_ = nullptr, *intensita_ = nullptr;
     QDoubleSpinBox *massa_ = nullptr, *potenza_ = nullptr, *accelerazione_ = nullptr;

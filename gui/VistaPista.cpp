@@ -18,44 +18,16 @@ namespace {
 const QColor ColoreIniziale("#FFB062");
 const QColor ColoreOttimizzata("#25E7DE");
 
-// Interpolazione cubica chiusa con tangenti condivise (C1).
-// Ogni curva passa ESATTAMENTE per i punti valutati dal motore C++:
-// NON filtriamo, non spostiamo e non inventiamo i punti campionati.
-// Le tangenti sono limitate dai segmenti vicini per evitare overshoot
-// nelle curve strette. Solo rendering: i tempi del valutatore non cambiano.
-QPainterPath formaChiusa(const QVector<QPointF> &punti,
-                         const std::function<QPointF(const QPointF &)> &converti) {
+// Il motore genera gia' una traiettoria campionata ad alta risoluzione.
+// Qt la disegna direttamente, senza modificare la geometria valutata:
+// antialiasing e giunzioni tonde migliorano l'aspetto visivo.
+QPainterPath formaChiusa(const QVector<QPointF>& punti,
+                         const std::function<QPointF(const QPointF&)>& converti) {
     QPainterPath path;
-    const qsizetype n = punti.size();
-    if (n == 0) return path;
-    QVector<QPointF> px;
-    px.reserve(n);
-    for (const auto &pt : punti) px.push_back(converti(pt));
-    path.moveTo(px.front());
-    if (n < 4) {
-        for (qsizetype i = 1; i < n; ++i) path.lineTo(px[i]);
-        path.closeSubpath();
-        return path;
-    }
-    auto norma = [](const QPointF &v) { return std::hypot(v.x(), v.y()); };
-    QVector<QPointF> maniglia(n);
-    for (qsizetype i = 0; i < n; ++i) {
-        const QPointF a = px[(i+n-1)%n], b = px[i], c = px[(i+1)%n];
-        const double precedente = norma(b-a), successivo = norma(c-b);
-        const QPointF direzione = c-a;
-        const double lunghezza = norma(direzione);
-        if (precedente < 1e-9 || successivo < 1e-9 || lunghezza < 1e-9) {
-            maniglia[i] = {};
-        } else {
-            // Una maniglia corta preserva il tracciato ed evita anelli/overshoot.
-            maniglia[i] = direzione * ((1.0 / 3.0) * std::min(precedente, successivo) / lunghezza);
-        }
-    }
-    for (qsizetype i = 0; i < n; ++i) {
-        const qsizetype j = (i+1)%n;
-        path.cubicTo(px[i]+maniglia[i], px[j]-maniglia[j], px[j]);
-    }
-    path.closeSubpath();
+    if (punti.isEmpty()) return path;
+    path.moveTo(converti(punti.front()));
+    for (qsizetype i=1; i<punti.size(); ++i) path.lineTo(converti(punti[i]));
+    if (punti.size()>2) path.closeSubpath();
     return path;
 }
 
@@ -334,7 +306,7 @@ void VistaPista::paintEvent(QPaintEvent *) {
             }
         }
 
-        // Il marcatore segue la stessa curva cubica mostrata a schermo.
+        // Il marcatore segue la stessa polilinea campionata mostrata a schermo.
         // Animazione illustrativa: non rappresenta la velocita' del veicolo.
         const QPainterPath *percorsoAuto = nullptr;
         qsizetype numeroPunti = 0;

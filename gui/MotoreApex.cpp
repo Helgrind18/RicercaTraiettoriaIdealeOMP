@@ -8,6 +8,7 @@
 #include "Veicolo.hpp"
 #include "Gomma.hpp"
 #include "Punto2D.hpp"
+#include "InterpolatorePista.hpp"
 
 #include <QFile>
 #include <QTextStream>
@@ -29,29 +30,6 @@ double distanza(const QPointF &a, const QPointF &b) {
     return std::hypot(a.x() - b.x(), a.y() - b.y());
 }
 
-QVector<QPointF> ricampiona(const QVector<QPointF> &input, int n) {
-    if (input.size() < 3 || n < 3)
-        throw std::invalid_argument("La pista deve avere almeno tre punti e tre sezioni");
-    const int m = static_cast<int>(input.size());
-    QVector<double> cumulati(m + 1, 0.0);
-    for (int i = 0; i < m; ++i)
-        cumulati[i + 1] = cumulati[i] + distanza(input[i], input[(i + 1) % m]);
-    const double totale = cumulati.back();
-    if (!(totale > eps)) throw std::invalid_argument("Pista degenerata (lunghezza nulla)");
-
-    QVector<QPointF> result;
-    result.reserve(n);
-    int j = 0;
-    for (int i = 0; i < n; ++i) {
-        const double s = totale * static_cast<double>(i) / n;
-        while (j + 1 < m && cumulati[j + 1] < s) ++j;
-        const double lung = cumulati[j + 1] - cumulati[j];
-        const double t = lung > eps ? (s - cumulati[j]) / lung : 0.0;
-        result.push_back(input[j] * (1.0 - t) + input[(j + 1) % m] * t);
-    }
-    return result;
-}
-
 std::vector<SezionePista> creaSezioni(const GeometriaApex &g) {
     std::vector<SezionePista> out;
     out.reserve(static_cast<size_t>(g.centro.size()));
@@ -65,7 +43,7 @@ std::vector<SezionePista> creaSezioni(const GeometriaApex &g) {
 
 QVector<QPointF> proietta(const Traiettoria &traiettoria, const GeometriaApex &g) {
     if (traiettoria.getNumeroPosizioni() != static_cast<int>(g.centro.size()))
-        throw std::runtime_error("Numero geni incompatibile con il circuito");
+        throw std::runtime_error("Numero campioni incompatibile con il circuito");
     QVector<QPointF> punti;
     punti.reserve(g.centro.size());
     for (int i = 0; i < traiettoria.getNumeroPosizioni(); ++i) {
@@ -146,25 +124,35 @@ QVector<QPointF> caricaCentroPista(const QString &percorso) {
 
 GeometriaApex creaGeometriaPista(const QVector<QPointF> &input, int n, double larghezza) {
     GeometriaApex geo;
-    geo.centro = ricampiona(input, n);
+    if (!(larghezza > 0.0) || !std::isfinite(larghezza))
+        throw std::invalid_argument("Larghezza pista non valida");
+
+    std::vector<Punto2D> punti;
+    punti.reserve(input.size());
+    for (const QPointF &p : input)
+        punti.emplace_back(p.x(), p.y());
+
+    // Interpolazione periodica + distanza d'arco: una sola geometria
+    // utilizzata sia dalla GUI sia dal valutatore C++ originale.
+    const auto campioni = InterpolatorePista::campionaChiuso(punti, n);
+    geo.centro.reserve(n);
     geo.sinistro.reserve(n);
     geo.destro.reserve(n);
-    for (int i = 0; i < n; ++i) {
-        const QPointF a = geo.centro[(i + n - 1) % n];
-        const QPointF b = geo.centro[(i + 1) % n];
-        const QPointF tangent = b - a;
-        const double norm = std::hypot(tangent.x(), tangent.y());
-        if (norm < eps) throw std::runtime_error("Tangente nulla nella geometria della pista");
-        const QPointF normale(-tangent.y() / norm, tangent.x() / norm);
-        geo.sinistro.push_back(geo.centro[i] + normale * (larghezza * 0.5));
-        geo.destro.push_back(geo.centro[i] - normale * (larghezza * 0.5));
+    for (const auto &c : campioni) {
+        const QPointF centro(c.punto.getX(), c.punto.getY());
+        const QPointF direzione(c.tangente.getX(), c.tangente.getY());
+        const QPointF normale(-direzione.y(), direzione.x());
+        geo.centro.push_back(centro);
+        geo.sinistro.push_back(centro + normale * (larghezza * 0.5));
+        geo.destro.push_back(centro - normale * (larghezza * 0.5));
     }
     return geo;
 }
 
 RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fileCsv,
         const std::function<void(int, int, double)> &progresso) {
-    if (p.sezioni < 3 || p.popolazione < 2 || p.generazioni < 1 ||
+    if (p.sezioni < 3 || p.campioniValutazione < 3 || p.campioniValutazione > 20000 ||
+        p.popolazione < 2 || p.generazioni < 1 ||
         p.torneo < 2 || p.torneo > p.popolazione || p.elite < 0 || p.elite >= p.popolazione)
         throw std::invalid_argument("Configurazione dell'algoritmo non valida");
     if (!(p.grip > 0 && p.grip <= 1))
@@ -172,7 +160,7 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
 
     RisultatoApex risultato;
     risultato.parametri = p;
-    risultato.geometria = creaGeometriaPista(caricaCentroPista(fileCsv), p.sezioni);
+    risultato.geometria = creaGeometriaPista(caricaCentroPista(fileCsv), p.campioniValutazione);
     const auto sezioni = creaSezioni(risultato.geometria);
 
     const std::array<Gomma, 4> gomme = {
@@ -184,25 +172,13 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
                           p.accelerazioneLaterale, gomme);
     ValutatoreTraiettoria valutatore;
 
-    // Il primo estratto di mt19937 e' proprio il seed usato da ottimizza()
-    // per generare la popolazione iniziale. Si ricrea qui la stessa sequenza.
-    std::mt19937 sorgente(p.seed);
-    GeneratoreTraiettorie inizializzatore(sorgente());
-    const auto popolazioneIniziale = inizializzatore.generaPopolazione(p.popolazione, p.sezioni);
-    double miglioreIniziale = std::numeric_limits<double>::infinity();
-    Traiettoria traiettoriaIniziale;
-    for (const auto &t : popolazioneIniziale) {
-        const double tempo = valutatore.valutaTraiettoria(t, sezioni, veicolo);
-        if (tempo < miglioreIniziale) {
-            miglioreIniziale = tempo;
-            traiettoriaIniziale = t;
-        }
-    }
-
     AlgoritmoGenetico algoritmo(p.popolazione, p.generazioni, p.crossover,
                                p.mutazione, p.intensita, p.torneo, p.elite, p.seed);
     const auto start = std::chrono::steady_clock::now();
-    const Traiettoria ottima = algoritmo.ottimizza(sezioni, veicolo,
+    // Una sola generazione e valutazione iniziale, gestita dal genetico.
+    // Il valutatore riceve sempre p.campioniValutazione sezioni.
+    const RisultatoGenetico risultatoGA = algoritmo.ottimizzaConDettagli(
+        sezioni, veicolo, p.sezioni,
         [&progresso, &start](int completate, int totale) {
             if (!progresso) return;
             const double secondi = std::chrono::duration<double>(
@@ -211,18 +187,22 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
         });
     const auto stop = std::chrono::steady_clock::now();
 
-    risultato.tempoIniziale = miglioreIniziale;
-    risultato.tempoFinale = valutatore.valutaTraiettoria(ottima, sezioni, veicolo);
-    risultato.durataMs = std::chrono::duration<double, std::milli>(stop - start).count();
-    risultato.iniziale = proietta(traiettoriaIniziale, risultato.geometria);
-    risultato.ottimizzata = proietta(ottima, risultato.geometria);
-    risultato.geniIniziali = estraiGeni(traiettoriaIniziale);
-    risultato.geniOttimizzati = estraiGeni(ottima);
-    // Richiediamo gli stessi profili di velocita che usa il valutatore del giro.
-    const auto vI = valutatore.profiloVelocitaPerGrafici(traiettoriaIniziale, sezioni, veicolo);
-    const auto vO = valutatore.profiloVelocitaPerGrafici(ottima, sezioni, veicolo);
-    const auto kI = valutatore.profiloCurvaturaPerGrafici(traiettoriaIniziale, sezioni);
-    const auto kO = valutatore.profiloCurvaturaPerGrafici(ottima, sezioni);
+    const Traiettoria inizialeDensa = risultatoGA.miglioreIniziale.ricampionaPeriodica(p.campioniValutazione);
+    const Traiettoria ottimaDensa = risultatoGA.miglioreFinale.ricampionaPeriodica(p.campioniValutazione);
+    risultato.tempoIniziale = risultatoGA.tempoIniziale;
+    risultato.tempoFinale = risultatoGA.tempoFinale;
+    risultato.durataMs = std::chrono::duration<double, std::milli>(stop-start).count();
+    risultato.iniziale = proietta(inizialeDensa, risultato.geometria);
+    risultato.ottimizzata = proietta(ottimaDensa, risultato.geometria);
+    risultato.geniIniziali = estraiGeni(risultatoGA.miglioreIniziale);
+    risultato.geniOttimizzati = estraiGeni(risultatoGA.miglioreFinale);
+    risultato.posizioniCampionateIniziali = estraiGeni(inizialeDensa);
+    risultato.posizioniCampionateOttimizzate = estraiGeni(ottimaDensa);
+    // I profili numerici e il disegno usano esattamente la stessa geometria densa.
+    const auto vI = valutatore.profiloVelocitaPerGrafici(inizialeDensa, sezioni, veicolo);
+    const auto vO = valutatore.profiloVelocitaPerGrafici(ottimaDensa, sezioni, veicolo);
+    const auto kI = valutatore.profiloCurvaturaPerGrafici(inizialeDensa, sezioni);
+    const auto kO = valutatore.profiloCurvaturaPerGrafici(ottimaDensa, sezioni);
     profiliPerGrafici(risultato.iniziale, vI, kI, risultato.distanzaInizialeKm,
                      risultato.velocitaInizialeKmh, risultato.accelerazioneIniziale,
                      risultato.frenataIniziale, risultato.lateraleIniziale,

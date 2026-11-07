@@ -226,7 +226,12 @@ void ApexMainWindow::costruisciFinestra() {
     g->setColumnStretch(0,1);
     g->setHorizontalSpacing(10);
     g->setVerticalSpacing(9);
-    sezioni_ = intero(3, std::numeric_limits<int>::max(), 80);
+    sezioni_ = intero(3, 2000, 80);
+    sezioni_->setToolTip("Numero di geni (punti di controllo) ottimizzati: NON e' la precisione del giro.");
+    campioniValutazione_ = intero(80, 20000, 1200);
+    campioniValutazione_->setSingleStep(100);
+    campioniValutazione_->setToolTip("Risoluzione fissa della geometria e del calcolo del tempo. "
+                                     "Aumentarla richiede piu' tempo; 1200 e' un compromesso iniziale.");
     popolazione_ = intero(2, std::numeric_limits<int>::max(), 80);
     generazioni_ = intero(1, std::numeric_limits<int>::max(), 25);
     crossover_ = decimale(0.0, 1.0, .80);
@@ -236,7 +241,8 @@ void ApexMainWindow::costruisciFinestra() {
     elite_ = intero(0, 79, 4);
     seed_ = intero(0, 2147483647, 2026);
     int gr = 0;
-    riga(g, gr++, "Sezioni", sezioni_);
+    riga(g, gr++, "Punti controllo", sezioni_);
+    riga(g, gr++, "Campioni giro", campioniValutazione_);
     riga(g, gr++, "Popolazione", popolazione_);
     riga(g, gr++, "Generazioni", generazioni_);
     riga(g, gr++, "Crossover", crossover_);
@@ -536,6 +542,7 @@ ParametriApex ApexMainWindow::leggiParametri() const {
     ParametriApex p;
     p.circuito = circuito_->currentData().toString();
     p.sezioni = sezioni_->value();
+    p.campioniValutazione = campioniValutazione_->value();
     p.popolazione = popolazione_->value();
     p.generazioni = generazioni_->value();
     p.crossover = crossover_->value();
@@ -559,7 +566,7 @@ ParametriApex ApexMainWindow::leggiParametri() const {
 void ApexMainWindow::aggiornaPista() {
     try {
         const auto punti = caricaCentroPista(percorsoCircuito());
-        pista_->mostraGeometria(creaGeometriaPista(punti, 150));
+        pista_->mostraGeometria(creaGeometriaPista(punti, 1200));
         grafico_->impostaGeni({}, {});
         for (auto *g : {graficoVelocita_, graficoAccelerazione_, graficoFrenata_,
                         graficoLaterale_, graficoCurvatura_})
@@ -587,6 +594,19 @@ void ApexMainWindow::avviaOttimizzazione() {
         return;
     }
     const QString file = percorsoCircuito();
+    // I risultati precedenti non devono essere scambiati per quelli del run in corso.
+    risultato_.reset();
+    grafico_->impostaGeni({}, {});
+    for (auto *g : {graficoVelocita_, graficoAccelerazione_, graficoFrenata_,
+                    graficoLaterale_, graficoCurvatura_})
+        g->impostaSerie({}, {}, {}, {});
+    esportaJson_->setEnabled(false);
+    esportaCsv_->setEnabled(false);
+    tempoIniziale_->setText("— s");
+    tempoFinale_->setText("— s");
+    miglioramento_->setText("— %");
+    durata_->setText("— ms");
+    pista_->mostraGeometria(creaGeometriaPista(caricaCentroPista(file), 1200));
     bottoneAvvio_->setEnabled(false);
     circuito_->setEnabled(false);
     attivita_->setRange(0, p.generazioni);
@@ -707,7 +727,8 @@ void ApexMainWindow::esportaRisultatoJson() {
     root["tempoOttimizzatoSecondi"] = r.tempoFinale;
     root["durataCalcoloMs"] = r.durataMs;
     QJsonObject params;
-    params["sezioni"] = r.parametri.sezioni;
+    params["sezioni"] = r.parametri.sezioni; // Geni
+    params["campioniValutazione"] = r.parametri.campioniValutazione;
     params["popolazione"] = r.parametri.popolazione;
     params["generazioni"] = r.parametri.generazioni;
     params["crossover"] = r.parametri.crossover;
@@ -723,6 +744,8 @@ void ApexMainWindow::esportaRisultatoJson() {
     root["traiettoriaOttimizzata"] = puntiJson(r.ottimizzata);
     root["geniIniziali"] = geniJson(r.geniIniziali);
     root["geniOttimizzati"] = geniJson(r.geniOttimizzati);
+    root["posizioniCampionateIniziali"] = geniJson(r.posizioniCampionateIniziali);
+    root["posizioniCampionateOttimizzate"] = geniJson(r.posizioniCampionateOttimizzate);
     root["distanzaInizialeKm"] = geniJson(r.distanzaInizialeKm);
     root["distanzaOttimizzataKm"] = geniJson(r.distanzaOttimizzataKm);
     root["velocitaInizialeKmh"] = geniJson(r.velocitaInizialeKmh);
@@ -756,7 +779,7 @@ void ApexMainWindow::esportaRisultatoCsv() {
         return;
     }
     QTextStream stream(&out);
-    stream << "indice,x_iniziale_m,y_iniziale_m,x_ottimizzata_m,y_ottimizzata_m,gene_iniziale,gene_ottimizzato,";
+    stream << "indice,x_iniziale_m,y_iniziale_m,x_ottimizzata_m,y_ottimizzata_m,pos_laterale_campionata_iniziale,pos_laterale_campionata_ottimizzata,";
     stream << "distanza_iniziale_km,distanza_ottimizzata_km,velocita_iniziale_kmh,velocita_ottimizzata_kmh,";
     stream << "accelerazione_iniziale_m_s2,accelerazione_ottimizzata_m_s2,frenata_iniziale_m_s2,frenata_ottimizzata_m_s2,";
     stream << "acc_laterale_iniziale_m_s2,acc_laterale_ottimizzata_m_s2,";
@@ -765,7 +788,7 @@ void ApexMainWindow::esportaRisultatoCsv() {
     for (qsizetype i = 0; i < r.ottimizzata.size(); ++i) {
         stream << i << ',' << r.iniziale[i].x() << ',' << r.iniziale[i].y() << ','
                << r.ottimizzata[i].x() << ',' << r.ottimizzata[i].y() << ','
-               << r.geniIniziali[i] << ',' << r.geniOttimizzati[i] << ','
+               << r.posizioniCampionateIniziali[i] << ',' << r.posizioniCampionateOttimizzate[i] << ','
                << r.distanzaInizialeKm[i] << ',' << r.distanzaOttimizzataKm[i] << ','
                << r.velocitaInizialeKmh[i] << ',' << r.velocitaOttimizzataKmh[i] << ','
                << r.accelerazioneIniziale[i] << ',' << r.accelerazioneOttimizzata[i] << ','

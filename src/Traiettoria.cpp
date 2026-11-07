@@ -1,6 +1,8 @@
 #include "Traiettoria.hpp"
 
 #include <stdexcept>
+#include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -20,7 +22,7 @@ Traiettoria::Traiettoria(
     // siano comprese tra 0 e 1.
     for (double posizione : posizioniLaterali) {
 
-        if (posizione < 0.0 || posizione > 1.0) {
+        if (!std::isfinite(posizione) || posizione < 0.0 || posizione > 1.0) {
             throw invalid_argument(
                 "Le posizioni laterali devono essere comprese tra 0 e 1"
             );
@@ -65,7 +67,7 @@ void Traiettoria::aggiungiPosizioneLaterale(
     double posizione
 ) {
 
-    if (posizione < 0.0 || posizione > 1.0) {
+    if (!std::isfinite(posizione) || posizione < 0.0 || posizione > 1.0) {
         throw invalid_argument(
             "La posizione laterale deve essere compresa tra 0 e 1"
         );
@@ -90,7 +92,7 @@ void Traiettoria::setPosizioneLaterale(
         );
     }
 
-    if (posizione < 0.0 || posizione > 1.0) {
+    if (!std::isfinite(posizione) || posizione < 0.0 || posizione > 1.0) {
         throw invalid_argument(
             "La posizione laterale deve essere compresa tra 0 e 1"
         );
@@ -136,4 +138,31 @@ vector<Punto2D> Traiettoria::calcolaPunti(
 
 
     return punti;
+}
+
+Traiettoria Traiettoria::ricampionaPeriodica(int numeroCampioni) const {
+    const int n = getNumeroPosizioni();
+    if (n < 3 || numeroCampioni < 3) {
+        throw invalid_argument("Servono almeno 3 punti di controllo e 3 campioni");
+    }
+    vector<double> valori;
+    valori.reserve(static_cast<size_t>(numeroCampioni));
+    for (int i = 0; i < numeroCampioni; ++i) {
+        // Parametro periodico: l'ultimo campione precede il primo,
+        // senza duplicare la sezione iniziale.
+        const double u = static_cast<double>(i) * n / numeroCampioni;
+        const int j = static_cast<int>(std::floor(u));
+        const double t = u - j;
+        const double t2 = t*t, t3 = t2*t;
+        const double w0 = (1.0 - 3.0*t + 3.0*t2 - t3) / 6.0;
+        const double w1 = (4.0 - 6.0*t2 + 3.0*t3) / 6.0;
+        const double w2 = (1.0 + 3.0*t + 3.0*t2 - 3.0*t3) / 6.0;
+        const double w3 = t3 / 6.0;
+        const double v = w0*posizioniLaterali[(j+n-1)%n]
+                       + w1*posizioniLaterali[j%n]
+                       + w2*posizioniLaterali[(j+1)%n]
+                       + w3*posizioniLaterali[(j+2)%n];
+        valori.push_back(std::clamp(v, 0.0, 1.0));
+    }
+    return Traiettoria(valori);
 }

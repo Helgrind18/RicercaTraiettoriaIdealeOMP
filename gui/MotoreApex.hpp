@@ -8,7 +8,8 @@
 
 struct ParametriApex {
     QString circuito = "spa";
-    int sezioni = 80;
+    int sezioni = 80; // Punti di controllo del genetico
+    int campioniValutazione = 1200; // Risoluzione fisica indipendente
     int popolazione = 80;
     int generazioni = 25;
     double crossover = 0.80;
@@ -42,6 +43,9 @@ struct RisultatoApex {
     QVector<QPointF> ottimizzata;
     QVector<double> geniIniziali;
     QVector<double> geniOttimizzati;
+    // Posizioni laterali effettivamente campionate: una per punto di valutazione.
+    QVector<double> posizioniCampionateIniziali;
+    QVector<double> posizioniCampionateOttimizzate;
     double tempoIniziale = 0.0;
     double tempoFinale = 0.0;
     double durataMs = 0.0;
@@ -56,7 +60,7 @@ struct RisultatoApex {
     QVector<double> curvaturaInizialePerKm, curvaturaOttimizzataPerKm;
 };
 
-// Punto di accesso al motore C++ esistente: non cambia nessuna classe del core.
+// Punto di accesso al motore C++ e alla ricostruzione periodica della traiettoria.
 QVector<QPointF> caricaCentroPista(const QString &percorso);
 GeometriaApex creaGeometriaPista(const QVector<QPointF> &centro, int sezioni, double larghezzaMetri = 12.0);
 // Il callback e' facoltativo e viene chiamato dal thread del calcolo.

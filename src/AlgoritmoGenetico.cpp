@@ -36,6 +36,9 @@ AlgoritmoGenetico::AlgoritmoGenetico(
     if (
         dimensionePopolazione < 2 ||
         numeroGenerazioni <= 0 ||
+        !std::isfinite(probabilitaCrossover) ||
+        !std::isfinite(probabilitaMutazione) ||
+        !std::isfinite(intensitaMutazione) ||
         probabilitaCrossover < 0.0 ||
         probabilitaCrossover > 1.0 ||
         probabilitaMutazione < 0.0 ||
@@ -62,7 +65,8 @@ AlgoritmoGenetico::AlgoritmoGenetico(
 }
 
 vector<double> AlgoritmoGenetico::valutaPopolazione(const vector<Traiettoria> &popolazione,
-                                                    const vector<SezionePista> &sezioni, const Veicolo &veicolo) const {
+                                                    const vector<SezionePista> &sezioni, const Veicolo &veicolo,
+                                                    bool ricostruisciSpline) const {
     if (popolazione.empty()) {
         throw invalid_argument("Non posso valutare la popolazione");
     }
@@ -70,8 +74,11 @@ vector<double> AlgoritmoGenetico::valutaPopolazione(const vector<Traiettoria> &p
     tempi.reserve(popolazione.size());
     for (size_t i = 0; i < popolazione.size(); i++) {
         //Per ogni traiettoria devo fare la valutazione
-        double tempo = valutatore.valutaTraiettoria(popolazione[i], sezioni, veicolo);
-        tempi.push_back(tempo);
+        const Traiettoria densa = ricostruisciSpline ?
+            popolazione[i].ricampionaPeriodica(static_cast<int>(sezioni.size())) : popolazione[i];
+        const double tempo = valutatore.valutaTraiettoria(densa, sezioni, veicolo);
+        tempi.push_back(std::isfinite(tempo) && tempo > 0.0 ?
+                        tempo : std::numeric_limits<double>::infinity());
     }
     return tempi;
 }
@@ -245,38 +252,58 @@ vector<Traiettoria> AlgoritmoGenetico::generaNuovaPopolazione(const vector<Traie
 }
 
 Traiettoria AlgoritmoGenetico::ottimizza(const vector<SezionePista> &sezioni, const Veicolo &veicolo) {
-    return ottimizza(sezioni, veicolo, {});
+    return ottimizzaInterno(sezioni, veicolo, static_cast<int>(sezioni.size()), false, {}).miglioreFinale;
 }
 
 Traiettoria AlgoritmoGenetico::ottimizza(const vector<SezionePista> &sezioni,
                                         const Veicolo &veicolo,
                                         const std::function<void(int, int)> &progresso) {
-    if (sezioni.size() < 3) {
+    return ottimizzaInterno(sezioni, veicolo, static_cast<int>(sezioni.size()), false, progresso).miglioreFinale;
+}
+
+RisultatoGenetico AlgoritmoGenetico::ottimizzaConDettagli(
+        const vector<SezionePista>& sezioniValutazione,
+        const Veicolo& veicolo, int numeroGeni,
+        const std::function<void(int, int)>& progresso) {
+    return ottimizzaInterno(sezioniValutazione, veicolo, numeroGeni, true, progresso);
+}
+
+RisultatoGenetico AlgoritmoGenetico::ottimizzaInterno(
+        const vector<SezionePista>& sezioni,
+        const Veicolo& veicolo, int numeroGeni, bool ricostruisciSpline,
+        const std::function<void(int, int)>& progresso) {
+    if (sezioni.size() < 3 || numeroGeni < 3 ||
+        sezioni.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
         throw invalid_argument("Parametri non corretti per ottimizzare");
     }
     GeneratoreTraiettorie generatoreTraiettorie(this->generatore());
-    vector<Traiettoria> popolazione;
-    popolazione = generatoreTraiettorie.generaPopolazione(this->getDimensionePopolazione(),static_cast<int>(sezioni.size()));
-    Traiettoria miglioreTraiettoria;
-    double migliorTempo = numeric_limits<double>::infinity(); // conterrà il tempo più basso trovato
-    int indiceMigliore = 0;
-    double tempoMiglioreGenerazione = 0.0;
-    for (int generazione = 0; generazione < this->getNumeroGenerazioni(); generazione++) {
-        vector<double> tempi = this->valutaPopolazione(popolazione, sezioni, veicolo);
-        indiceMigliore = this->trovaIndiceMigliore(tempi);
-        tempoMiglioreGenerazione = tempi[indiceMigliore];
-        //Confronto e genero la prossima popolazione
+    vector<Traiettoria> popolazione = generatoreTraiettorie.generaPopolazione(
+        this->getDimensionePopolazione(), numeroGeni);
+
+    RisultatoGenetico risultato;
+    double migliorTempo = numeric_limits<double>::infinity();
+    for (int generazione = 0; generazione < numeroGenerazioni; ++generazione) {
+        const vector<double> tempi = valutaPopolazione(popolazione, sezioni, veicolo, ricostruisciSpline);
+        const int indiceMigliore = trovaIndiceMigliore(tempi);
+        const double tempoMiglioreGenerazione = tempi[static_cast<size_t>(indiceMigliore)];
+        if (generazione == 0) {
+            risultato.miglioreIniziale = popolazione[static_cast<size_t>(indiceMigliore)];
+            risultato.tempoIniziale = tempoMiglioreGenerazione;
+        }
         if (tempoMiglioreGenerazione < migliorTempo) {
             migliorTempo = tempoMiglioreGenerazione;
-            miglioreTraiettoria = popolazione[indiceMigliore];
+            risultato.miglioreFinale = popolazione[static_cast<size_t>(indiceMigliore)];
+            risultato.tempoFinale = tempoMiglioreGenerazione;
         }
-        if (generazione < this->getNumeroGenerazioni() - 1) {
-            popolazione = this->generaNuovaPopolazione(popolazione,tempi);
+        if (generazione < numeroGenerazioni - 1) {
+            popolazione = generaNuovaPopolazione(popolazione, tempi);
         }
-        // Segnala la generazione appena completata (nessun dato condiviso della GA).
-        if (progresso) progresso(generazione + 1, this->getNumeroGenerazioni());
+        if (progresso) progresso(generazione+1, numeroGenerazioni);
     }
-    return miglioreTraiettoria;
+    if (!std::isfinite(migliorTempo)) {
+        throw runtime_error("Nessuna traiettoria con tempo valido");
+    }
+    return risultato;
 }
 
 int AlgoritmoGenetico::getDimensionePopolazione() const {

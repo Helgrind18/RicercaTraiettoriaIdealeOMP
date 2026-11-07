@@ -82,6 +82,13 @@ public:
     vector<Punto2D> calcolaPunti(
         const vector<SezionePista>& sezioni
     ) const;
+
+    // I valori originali sono i punti di controllo della spline laterale.
+    // La B-spline cubica periodica (C2) campiona numeroCampioni
+    // posizioni, a prescindere dal numero di geni del genetico.
+    // I pesi non negativi conservano sempre l'intervallo [0, 1].
+    // L'API storica calcolaPunti() continua a richiedere 1:1.
+    Traiettoria ricampionaPeriodica(int numeroCampioni) const;
 };
 
 #endif
