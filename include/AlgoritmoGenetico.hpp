@@ -37,11 +37,21 @@ using namespace std;
 // Il risultato conserva gli individui ORIGINALI (geni) e i tempi
 // misurati con la stessa geometria di valutazione, senza una seconda
 // valutazione separata della popolazione iniziale nella GUI.
+struct StatisticaGenerazione {
+    int generazione = 0;
+    double miglioreGenerazione = 0.0;
+    double mediaValidi = 0.0;
+    double miglioreGlobale = 0.0;
+    int individuiValidi = 0;
+    int individuiNonValidi = 0;
+};
+
 struct RisultatoGenetico {
     Traiettoria miglioreIniziale;
     Traiettoria miglioreFinale;
     double tempoIniziale = 0.0;
     double tempoFinale = 0.0;
+    std::vector<StatisticaGenerazione> storico;
 };
 
 class AlgoritmoGenetico {
@@ -99,6 +109,9 @@ private:
     // Valutatore utilizzato per calcolare il tempo sul giro
     // di ogni traiettoria.
     ValutatoreTraiettoria valutatore;
+    // Margine geometrico dal bordo in metri (centro vettura).
+    // Zero mantiene il comportamento storico per i test legacy.
+    double margineMinimoMetri = 0.0;
 
 
     // ------------------------------------------------------------
@@ -314,6 +327,10 @@ public:
         int numeroGeni,
         const std::function<void(int, int)>& progresso = {}
     );
+
+    // Abilita/disabilita il controllo dei limiti geometrici nel fitness.
+    void impostaMargineMinimo(double metri);
+    double getMargineMinimo() const { return margineMinimoMetri; }
 
     // Getter dei parametri principali dell'algoritmo.
 

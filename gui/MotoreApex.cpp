@@ -9,6 +9,7 @@
 #include "Gomma.hpp"
 #include "Punto2D.hpp"
 #include "InterpolatorePista.hpp"
+#include "ValidatoreGeometrico.hpp"
 
 #include <QFile>
 #include <QTextStream>
@@ -155,6 +156,9 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
         p.popolazione < 2 || p.generazioni < 1 ||
         p.torneo < 2 || p.torneo > p.popolazione || p.elite < 0 || p.elite >= p.popolazione)
         throw std::invalid_argument("Configurazione dell'algoritmo non valida");
+    if (!std::isfinite(p.larghezzaVeicoloMetri) || p.larghezzaVeicoloMetri <= 0.0 ||
+        !std::isfinite(p.margineExtraMetri) || p.margineExtraMetri < 0.0)
+        throw std::invalid_argument("Parametri geometrici della vettura non validi");
     if (!(p.grip > 0 && p.grip <= 1))
         throw std::invalid_argument("Il grip deve essere nell'intervallo (0,1]");
 
@@ -174,6 +178,8 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
 
     AlgoritmoGenetico algoritmo(p.popolazione, p.generazioni, p.crossover,
                                p.mutazione, p.intensita, p.torneo, p.elite, p.seed);
+    const double margineRichiesto = p.larghezzaVeicoloMetri * 0.5 + p.margineExtraMetri;
+    algoritmo.impostaMargineMinimo(margineRichiesto);
     const auto start = std::chrono::steady_clock::now();
     // Una sola generazione e valutazione iniziale, gestita dal genetico.
     // Il valutatore riceve sempre p.campioniValutazione sezioni.
@@ -192,6 +198,22 @@ RisultatoApex eseguiOttimizzazioneApex(const ParametriApex &p, const QString &fi
     risultato.tempoIniziale = risultatoGA.tempoIniziale;
     risultato.tempoFinale = risultatoGA.tempoFinale;
     risultato.durataMs = std::chrono::duration<double, std::milli>(stop-start).count();
+    const auto checkIniziale = ValidatoreGeometrico::analizza(inizialeDensa, sezioni, margineRichiesto);
+    const auto checkFinale = ValidatoreGeometrico::analizza(ottimaDensa, sezioni, margineRichiesto);
+    risultato.margineMinimoIniziale = checkIniziale.margineMinimoMetri;
+    risultato.margineMinimoFinale = checkFinale.margineMinimoMetri;
+    risultato.validaIniziale = checkIniziale.geometricamenteValida();
+    risultato.validaFinale = checkFinale.geometricamenteValida();
+    if (!risultato.validaIniziale || !risultato.validaFinale)
+        throw std::runtime_error("Controllo finale dei bordi fallito: traiettoria non ammissibile");
+    for (const auto& st : risultatoGA.storico) {
+        risultato.generazioniStorico.push_back(st.generazione);
+        risultato.miglioriGenerazione.push_back(st.miglioreGenerazione);
+        risultato.medieGenerazione.push_back(st.mediaValidi);
+        risultato.miglioriGlobali.push_back(st.miglioreGlobale);
+        risultato.individuiValidi.push_back(st.individuiValidi);
+        risultato.individuiNonValidi.push_back(st.individuiNonValidi);
+    }
     risultato.iniziale = proietta(inizialeDensa, risultato.geometria);
     risultato.ottimizzata = proietta(ottimaDensa, risultato.geometria);
     risultato.geniIniziali = estraiGeni(risultatoGA.miglioreIniziale);

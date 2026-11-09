@@ -17,6 +17,7 @@ class QThread;
 class VistaPista;
 class GraficoGeni;
 class GraficoProfilo;
+class GraficoConvergenza;
 class QTabWidget;
 
 class ApexMainWindow : public QMainWindow {
@@ -27,6 +28,8 @@ public:
 private:
     VistaPista *pista_ = nullptr;
     GraficoGeni *grafico_ = nullptr;
+    GraficoConvergenza *graficoConvergenza_ = nullptr;
+    QLabel *esitoGeometrico_ = nullptr;
     GraficoProfilo *graficoVelocita_ = nullptr;
     GraficoProfilo *graficoAccelerazione_ = nullptr;
     GraficoProfilo *graficoFrenata_ = nullptr;
@@ -41,9 +44,11 @@ private:
     QDoubleSpinBox *massa_ = nullptr, *potenza_ = nullptr, *accelerazione_ = nullptr;
     QDoubleSpinBox *frenata_ = nullptr, *cd_ = nullptr, *area_ = nullptr;
     QDoubleSpinBox *velocita_ = nullptr, *accelerazioneLaterale_ = nullptr, *grip_ = nullptr;
+    QDoubleSpinBox *larghezzaVeicolo_ = nullptr, *margineExtra_ = nullptr;
     QCheckBox *mostraIniziale_ = nullptr, *mostraOttimizzata_ = nullptr;
     QPushButton *bottoneAvvio_ = nullptr, *bottonePlay_ = nullptr;
     QPushButton *esportaJson_ = nullptr, *esportaCsv_ = nullptr;
+    QPushButton *esportaConvergenza_ = nullptr;
     QLabel *tempoIniziale_ = nullptr, *tempoFinale_ = nullptr;
     QLabel *miglioramento_ = nullptr, *durata_ = nullptr;
     QLabel *stato_ = nullptr, *infoPista_ = nullptr;
@@ -59,6 +64,7 @@ private:
     void apriVistaGrande();
     void esportaRisultatoJson();
     void esportaRisultatoCsv();
+    void esportaConvergenzaCsv();
     ParametriApex leggiParametri() const;
     QString percorsoCircuito() const;
 };

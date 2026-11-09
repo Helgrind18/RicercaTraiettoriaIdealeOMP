@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "GeneraTraiettorie.hpp"
+#include "ValidatoreGeometrico.hpp"
 //
 // Created by helgrind on 02/11/26.
 //
@@ -74,11 +75,19 @@ vector<double> AlgoritmoGenetico::valutaPopolazione(const vector<Traiettoria> &p
     tempi.reserve(popolazione.size());
     for (size_t i = 0; i < popolazione.size(); i++) {
         //Per ogni traiettoria devo fare la valutazione
-        const Traiettoria densa = ricostruisciSpline ?
-            popolazione[i].ricampionaPeriodica(static_cast<int>(sezioni.size())) : popolazione[i];
+        const Traiettoria densa = ricostruisciSpline
+                                      ? popolazione[i].ricampionaPeriodica(static_cast<int>(sezioni.size()))
+                                      : popolazione[i];
+        // La validazione completa (bordi, incroci, degenerazioni e margine)
+        // viene usata direttamente come vincolo di ammissibilita' del fitness.
+        if (margineMinimoMetri > 0.0) {
+            if (!ValidatoreGeometrico::ammissibileRapida(densa, sezioni, margineMinimoMetri)) {
+                tempi.push_back(std::numeric_limits<double>::infinity());
+                continue;
+            }
+        }
         const double tempo = valutatore.valutaTraiettoria(densa, sezioni, veicolo);
-        tempi.push_back(std::isfinite(tempo) && tempo > 0.0 ?
-                        tempo : std::numeric_limits<double>::infinity());
+        tempi.push_back(std::isfinite(tempo) && tempo > 0.0 ? tempo : std::numeric_limits<double>::infinity());
     }
     return tempi;
 }
@@ -146,8 +155,8 @@ Traiettoria AlgoritmoGenetico::crossover(const Traiettoria &genitore1, const Tra
     figlio.reserve(genitore1.getNumeroPosizioni());
     for (int i = 0; i < genitore1.getNumeroPosizioni(); ++i) {
         const double valore =
-            alpha * genitore1.getPosizioneLaterale(i) +
-            (1.0 - alpha) * genitore2.getPosizioneLaterale(i);
+                alpha * genitore1.getPosizioneLaterale(i) +
+                (1.0 - alpha) * genitore2.getPosizioneLaterale(i);
         figlio.push_back(clamp(valore, 0.0, 1.0));
     }
     return Traiettoria(figlio);
@@ -240,9 +249,8 @@ vector<Traiettoria> AlgoritmoGenetico::generaNuovaPopolazione(const vector<Traie
         double probabilita = distribuzioneProbabilita(this->generatore);
         Traiettoria figlio = Traiettoria();
         if (probabilita < this->getProbabilitaCrossover()) {
-            figlio = crossover(genitore1,genitore2);
-        }
-        else {
+            figlio = crossover(genitore1, genitore2);
+        } else {
             figlio = genitore1;
         }
         muta(figlio);
@@ -256,22 +264,28 @@ Traiettoria AlgoritmoGenetico::ottimizza(const vector<SezionePista> &sezioni, co
 }
 
 Traiettoria AlgoritmoGenetico::ottimizza(const vector<SezionePista> &sezioni,
-                                        const Veicolo &veicolo,
-                                        const std::function<void(int, int)> &progresso) {
+                                         const Veicolo &veicolo,
+                                         const std::function<void(int, int)> &progresso) {
     return ottimizzaInterno(sezioni, veicolo, static_cast<int>(sezioni.size()), false, progresso).miglioreFinale;
 }
 
 RisultatoGenetico AlgoritmoGenetico::ottimizzaConDettagli(
-        const vector<SezionePista>& sezioniValutazione,
-        const Veicolo& veicolo, int numeroGeni,
-        const std::function<void(int, int)>& progresso) {
+    const vector<SezionePista> &sezioniValutazione,
+    const Veicolo &veicolo, int numeroGeni,
+    const std::function<void(int, int)> &progresso) {
     return ottimizzaInterno(sezioniValutazione, veicolo, numeroGeni, true, progresso);
 }
 
+void AlgoritmoGenetico::impostaMargineMinimo(double metri) {
+    if (!std::isfinite(metri) || metri < 0.0)
+        throw std::invalid_argument("Margine geometrico non valido");
+    margineMinimoMetri = metri;
+}
+
 RisultatoGenetico AlgoritmoGenetico::ottimizzaInterno(
-        const vector<SezionePista>& sezioni,
-        const Veicolo& veicolo, int numeroGeni, bool ricostruisciSpline,
-        const std::function<void(int, int)>& progresso) {
+    const vector<SezionePista> &sezioni,
+    const Veicolo &veicolo, int numeroGeni, bool ricostruisciSpline,
+    const std::function<void(int, int)> &progresso) {
     if (sezioni.size() < 3 || numeroGeni < 3 ||
         sezioni.size() > static_cast<size_t>(std::numeric_limits<int>::max())) {
         throw invalid_argument("Parametri non corretti per ottimizzare");
@@ -280,11 +294,68 @@ RisultatoGenetico AlgoritmoGenetico::ottimizzaInterno(
     vector<Traiettoria> popolazione = generatoreTraiettorie.generaPopolazione(
         this->getDimensionePopolazione(), numeroGeni);
 
+    // Le B-spline laterali hanno pesi non negativi: mantenendo TUTTI i geni
+    // nel corridoio ristretto otteniamo campioni nel medesimo intervallo.
+    // Il validatore completo controlla inoltre attraversamenti e incroci.
+    if (margineMinimoMetri > 0.0) {
+        double limite = 0.0;
+        for (const auto &sezione: sezioni) {
+            const auto &a = sezione.getPuntoSinistro();
+            const auto &b = sezione.getPuntoDestro();
+            const double larghezza = std::hypot(a.getX() - b.getX(), a.getY() - b.getY());
+            if (!(larghezza > 2.0 * margineMinimoMetri))
+                throw std::invalid_argument("Margine superiore alla meta' larghezza pista");
+            limite = std::max(limite, margineMinimoMetri / larghezza);
+        }
+        const auto restringi = [limite](Traiettoria &t) {
+            for (int i = 0; i < t.getNumeroPosizioni(); ++i)
+                t.setPosizioneLaterale(i, std::clamp(t.getPosizioneLaterale(i), limite, 1.0 - limite));
+        };
+        for (auto &individuo: popolazione) restringi(individuo);
+        // Un candidato centrale garantisce almeno una inizializzazione
+        // plausibile quando la generazione casuale e' aggressiva.
+        popolazione[0] = Traiettoria(std::vector<double>(static_cast<size_t>(numeroGeni), 0.5));
+        // La stessa restrizione viene applicata dopo crossover e mutazione.
+    }
+
     RisultatoGenetico risultato;
+    risultato.storico.reserve(static_cast<size_t>(numeroGenerazioni));
     double migliorTempo = numeric_limits<double>::infinity();
     for (int generazione = 0; generazione < numeroGenerazioni; ++generazione) {
-        const vector<double> tempi = valutaPopolazione(popolazione, sezioni, veicolo, ricostruisciSpline);
+        vector<double> tempi = valutaPopolazione(popolazione, sezioni, veicolo, ricostruisciSpline);
+        if (margineMinimoMetri > 0.0) {
+            // Controllo completo obbligatorio sui migliori candidati:
+            // non possiamo accettare una soluzione che superi solo il prefiltro.
+            std::vector<std::size_t> ordinati(tempi.size());
+            std::iota(ordinati.begin(), ordinati.end(), std::size_t{0});
+            std::sort(ordinati.begin(), ordinati.end(), [&](std::size_t a, std::size_t b) {
+                return tempi[a] < tempi[b];
+            });
+            int approvati = 0;
+            const int quanti = std::max(1, numeroElite + 1);
+            for (std::size_t indice: ordinati) {
+                if (!std::isfinite(tempi[indice])) break;
+                const Traiettoria densa = ricostruisciSpline
+                                              ? popolazione[indice].ricampionaPeriodica(
+                                                  static_cast<int>(sezioni.size()))
+                                              : popolazione[indice];
+                const auto completo = ValidatoreGeometrico::analizza(densa, sezioni, margineMinimoMetri);
+                if (!completo.geometricamenteValida()) {
+                    tempi[indice] = std::numeric_limits<double>::infinity();
+                } else if (++approvati >= quanti) {
+                    break;
+                }
+            }
+        }
         const int indiceMigliore = trovaIndiceMigliore(tempi);
+        int validi = 0;
+        double somma = 0.0;
+        for (const double t: tempi) if (std::isfinite(t)) {
+            ++validi;
+            somma += t;
+        }
+        if (validi == 0)
+            throw std::runtime_error("Nessuna traiettoria geometricamente ammissibile: ridurre il margine");
         const double tempoMiglioreGenerazione = tempi[static_cast<size_t>(indiceMigliore)];
         if (generazione == 0) {
             risultato.miglioreIniziale = popolazione[static_cast<size_t>(indiceMigliore)];
@@ -295,10 +366,28 @@ RisultatoGenetico AlgoritmoGenetico::ottimizzaInterno(
             risultato.miglioreFinale = popolazione[static_cast<size_t>(indiceMigliore)];
             risultato.tempoFinale = tempoMiglioreGenerazione;
         }
+        risultato.storico.push_back({
+            generazione + 1, tempoMiglioreGenerazione,
+            somma / validi, migliorTempo,
+            validi, static_cast<int>(tempi.size()) - validi
+        });
         if (generazione < numeroGenerazioni - 1) {
             popolazione = generaNuovaPopolazione(popolazione, tempi);
+            if (margineMinimoMetri > 0.0) {
+                double limite = 0.0;
+                for (const auto &sezione: sezioni) {
+                    const auto &a = sezione.getPuntoSinistro();
+                    const auto &b = sezione.getPuntoDestro();
+                    limite = std::max(
+                        limite, margineMinimoMetri / std::hypot(a.getX() - b.getX(), a.getY() - b.getY()));
+                }
+                for (auto &figlio: popolazione)
+                    for (int j = 0; j < figlio.getNumeroPosizioni(); ++j)
+                        figlio.setPosizioneLaterale(
+                            j, std::clamp(figlio.getPosizioneLaterale(j), limite, 1.0 - limite));
+            }
         }
-        if (progresso) progresso(generazione+1, numeroGenerazioni);
+        if (progresso) progresso(generazione + 1, numeroGenerazioni);
     }
     if (!std::isfinite(migliorTempo)) {
         throw runtime_error("Nessuna traiettoria con tempo valido");

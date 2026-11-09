@@ -2,6 +2,7 @@
 #include "VistaPista.hpp"
 #include "GraficoGeni.hpp"
 #include "GraficoProfilo.hpp"
+#include "GraficoConvergenza.hpp"
 
 #include <QApplication>
 #include <QCheckBox>
@@ -228,10 +229,10 @@ void ApexMainWindow::costruisciFinestra() {
     g->setVerticalSpacing(9);
     sezioni_ = intero(3, 2000, 80);
     sezioni_->setToolTip("Numero di geni (punti di controllo) ottimizzati: NON e' la precisione del giro.");
-    campioniValutazione_ = intero(80, 20000, 1200);
+    campioniValutazione_ = intero(80, 20000, 4800);
     campioniValutazione_->setSingleStep(100);
     campioniValutazione_->setToolTip("Risoluzione fissa della geometria e del calcolo del tempo. "
-                                     "Aumentarla richiede piu' tempo; 1200 e' un compromesso iniziale.");
+                                     "4800 e' la risoluzione verificata nei test numerici V4.");
     popolazione_ = intero(2, std::numeric_limits<int>::max(), 80);
     generazioni_ = intero(1, std::numeric_limits<int>::max(), 25);
     crossover_ = decimale(0.0, 1.0, .80);
@@ -269,6 +270,10 @@ void ApexMainWindow::costruisciFinestra() {
     velocita_ = decimale(1, 500, 315, 0, 5, "km/h");
     accelerazioneLaterale_ = decimale(.1, 50, 18, 1, .5, "m/s²");
     grip_ = decimale(.01, 1, .95, 2, .05);
+    larghezzaVeicolo_ = decimale(.5, 3., 2.0, 2, .05, "m");
+    larghezzaVeicolo_->setToolTip("Vincolo SOLO geometrico: centro lontano almeno meta' larghezza dal bordo.");
+    margineExtra_ = decimale(0., 2., 0., 2, .05, "m");
+    margineExtra_->setToolTip("Distanza di sicurezza opzionale aggiunta a meta' larghezza.");
     int vr = 0;
     riga(v, vr++, "Massa", massa_);
     riga(v, vr++, "Potenza max", potenza_);
@@ -279,6 +284,8 @@ void ApexMainWindow::costruisciFinestra() {
     riga(v, vr++, "Velocità max", velocita_);
     riga(v, vr++, "Acceleraz. laterale", accelerazioneLaterale_);
     riga(v, vr++, "Grip gomme", grip_);
+    riga(v, vr++, "Larghezza auto", larghezzaVeicolo_);
+    riga(v, vr++, "Margine extra", margineExtra_);
     vl->addLayout(v);
     vl->addStretch();
     tabs->addTab(veicolo, "VEICOLO");
@@ -377,6 +384,16 @@ void ApexMainWindow::costruisciFinestra() {
         metriche->addLayout(col, 1);
     }
     a->addLayout(metriche);
+    esitoGeometrico_ = testo("LIMITI PISTA  ·  IN ATTESA DI OTTIMIZZAZIONE", "description");
+    a->addWidget(esitoGeometrico_);
+    auto *cartaConvergenza = contenitore("card");
+    auto *vc = verticale(cartaConvergenza, 12, 7);
+    vc->addWidget(testo("CONVERGENZA DEL GENETICO  /  FITNESS PER GENERAZIONE", "titoloCard"));
+    vc->addWidget(testo("Migliore della generazione, media degli individui validi e migliore globale. "
+                         "Media dei candidati ammessi al prefiltro; i migliori sono validati integralmente.", "description"));
+    graficoConvergenza_ = new GraficoConvergenza;
+    vc->addWidget(graficoConvergenza_);
+    a->addWidget(cartaConvergenza);
 
     auto *griglia = new QGridLayout;
     griglia->setHorizontalSpacing(12);
@@ -427,8 +444,11 @@ void ApexMainWindow::costruisciFinestra() {
     esportaCsv_ = new QPushButton("ESPORTA CSV");
     esportaJson_->setEnabled(false);
     esportaCsv_->setEnabled(false);
+    esportaConvergenza_ = new QPushButton("ESPORTA CONVERGENZA CSV");
+    esportaConvergenza_->setEnabled(false);
     azioniAnalisi->addWidget(esportaJson_);
     azioniAnalisi->addWidget(esportaCsv_);
+    azioniAnalisi->addWidget(esportaConvergenza_);
     azioniAnalisi->addStretch();
     a->addLayout(azioniAnalisi);
     a->addWidget(testo("Nota: la pista è ricavata da coordinate GPS, con larghezza stimata di 12 m. I grafici sono simulazioni del modello del tuo progetto, non telemetria misurata.", "description"));
@@ -465,6 +485,7 @@ void ApexMainWindow::costruisciFinestra() {
     });
     connect(esportaJson_, &QPushButton::clicked, this, [this] { esportaRisultatoJson(); });
     connect(esportaCsv_, &QPushButton::clicked, this, [this] { esportaRisultatoCsv(); });
+    connect(esportaConvergenza_, &QPushButton::clicked, this, [this] { esportaConvergenzaCsv(); });
     pista_->avviaAnimazione(true);
 }
 
@@ -560,6 +581,8 @@ ParametriApex ApexMainWindow::leggiParametri() const {
     p.velocitaKmh = velocita_->value();
     p.accelerazioneLaterale = accelerazioneLaterale_->value();
     p.grip = grip_->value();
+    p.larghezzaVeicoloMetri = larghezzaVeicolo_->value();
+    p.margineExtraMetri = margineExtra_->value();
     return p;
 }
 
@@ -574,6 +597,9 @@ void ApexMainWindow::aggiornaPista() {
         risultato_.reset();
         esportaJson_->setEnabled(false);
         esportaCsv_->setEnabled(false);
+        esportaConvergenza_->setEnabled(false);
+        graficoConvergenza_->impostaSerie({}, {}, {}, {});
+        esitoGeometrico_->setText("LIMITI PISTA  ·  IN ATTESA DI OTTIMIZZAZIONE");
         tempoIniziale_->setText("— s"); tempoFinale_->setText("— s");
         miglioramento_->setText("— %"); durata_->setText("— ms");
         infoPista_->setText(circuito_->currentData().toString() == "spa" ?
@@ -602,6 +628,9 @@ void ApexMainWindow::avviaOttimizzazione() {
         g->impostaSerie({}, {}, {}, {});
     esportaJson_->setEnabled(false);
     esportaCsv_->setEnabled(false);
+    esportaConvergenza_->setEnabled(false);
+    graficoConvergenza_->impostaSerie({}, {}, {}, {});
+    esitoGeometrico_->setText("LIMITI PISTA  ·  OTTIMIZZAZIONE IN CORSO");
     tempoIniziale_->setText("— s");
     tempoFinale_->setText("— s");
     miglioramento_->setText("— %");
@@ -690,6 +719,12 @@ void ApexMainWindow::mostraRisultato(const RisultatoApex &r) {
     risultato_ = r;
     pista_->mostraRisultato(r);
     grafico_->impostaGeni(r.geniIniziali, r.geniOttimizzati);
+    graficoConvergenza_->impostaSerie(r.generazioniStorico, r.miglioriGenerazione,
+                                      r.medieGenerazione, r.miglioriGlobali);
+    esitoGeometrico_->setText(QString("LIMITI PISTA  ·  %1  |  margine iniziale %2 m  |  margine finale %3 m  |  richiesto %4 m")
+        .arg(r.validaFinale ? "TRAIETTORIA AMMISSIBILE" : "NON AMMISSIBILE")
+        .arg(r.margineMinimoIniziale, 0, 'f', 3).arg(r.margineMinimoFinale, 0, 'f', 3)
+        .arg(r.parametri.larghezzaVeicoloMetri / 2.0 + r.parametri.margineExtraMetri, 0, 'f', 3));
     graficoVelocita_->impostaSerie(r.distanzaInizialeKm, r.velocitaInizialeKmh,
                                    r.distanzaOttimizzataKm, r.velocitaOttimizzataKmh);
     graficoAccelerazione_->impostaSerie(r.distanzaInizialeKm, r.accelerazioneIniziale,
@@ -709,6 +744,7 @@ void ApexMainWindow::mostraRisultato(const RisultatoApex &r) {
     durata_->setText(QString::number(r.durataMs, 'f', 2) + " ms");
     esportaJson_->setEnabled(true);
     esportaCsv_->setEnabled(true);
+    esportaConvergenza_->setEnabled(true);
     stato_->setText(QString("COMPLETATO  ·  %1 GENERAZIONI  /  %2 INDIVIDUI  /  SEED %3")
                         .arg(r.parametri.generazioni).arg(r.parametri.popolazione).arg(r.parametri.seed));
 }
@@ -737,6 +773,23 @@ void ApexMainWindow::esportaRisultatoJson() {
     params["torneo"] = r.parametri.torneo;
     params["elite"] = r.parametri.elite;
     params["seed"] = int(r.parametri.seed);
+    params["larghezzaVeicoloMetri"] = r.parametri.larghezzaVeicoloMetri;
+    params["margineExtraMetri"] = r.parametri.margineExtraMetri;
+    root["margineMinimoInizialeMetri"] = r.margineMinimoIniziale;
+    root["margineMinimoOttimizzataMetri"] = r.margineMinimoFinale;
+    root["validaGeometricamente"] = r.validaFinale;
+    QJsonArray storico;
+    for (qsizetype i = 0; i < r.generazioniStorico.size(); ++i) {
+        QJsonObject row;
+        row["generazione"] = r.generazioniStorico[i];
+        row["miglioreGenerazioneSecondi"] = r.miglioriGenerazione[i];
+        row["mediaValidiSecondi"] = r.medieGenerazione[i];
+        row["miglioreGlobaleSecondi"] = r.miglioriGlobali[i];
+        row["validi"] = r.individuiValidi[i];
+        row["nonValidi"] = r.individuiNonValidi[i];
+        storico.append(row);
+    }
+    root["convergenza"] = storico;
     root["parametri"] = params;
     root["bordoSinistro"] = puntiJson(r.geometria.sinistro);
     root["bordoDestro"] = puntiJson(r.geometria.destro);
@@ -797,4 +850,24 @@ void ApexMainWindow::esportaRisultatoCsv() {
                << r.curvaturaInizialePerKm[i] << ',' << r.curvaturaOttimizzataPerKm[i] << '\n';
     }
     stato_->setText("TRAIETTORIE ESPORTATE IN CSV");
+}
+
+void ApexMainWindow::esportaConvergenzaCsv() {
+    if (!risultato_) return;
+    const QString file = QFileDialog::getSaveFileName(this, "Esporta convergenza genetica",
+        "apex_convergenza_" + risultato_->parametri.circuito + ".csv", "CSV (*.csv)");
+    if (file.isEmpty()) return;
+    QFile out(file);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Truncate)) {
+        QMessageBox::critical(this,"Errore esportazione","Impossibile scrivere il CSV della convergenza");
+        return;
+    }
+    QTextStream stream(&out);
+    stream << "generazione,migliore_generazione_s,media_validi_s,migliore_globale_s,validi,non_validi\n";
+    const auto& r=*risultato_;
+    for (qsizetype i=0; i<r.generazioniStorico.size(); ++i)
+        stream << r.generazioniStorico[i] << ',' << r.miglioriGenerazione[i] << ','
+               << r.medieGenerazione[i] << ',' << r.miglioriGlobali[i] << ','
+               << r.individuiValidi[i] << ',' << r.individuiNonValidi[i] << '\n';
+    stato_->setText("CONVERGENZA ESPORTATA IN CSV");
 }

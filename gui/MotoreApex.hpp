@@ -9,7 +9,7 @@
 struct ParametriApex {
     QString circuito = "spa";
     int sezioni = 80; // Punti di controllo del genetico
-    int campioniValutazione = 1200; // Risoluzione fisica indipendente
+    int campioniValutazione = 4800; // Risoluzione fisica indipendente
     int popolazione = 80;
     int generazioni = 25;
     double crossover = 0.80;
@@ -28,6 +28,9 @@ struct ParametriApex {
     double velocitaKmh = 315.0;
     double accelerazioneLaterale = 18.0;
     double grip = 0.95;
+    // Solo vincolo geometrico: non cambia dinamica, grip o forze fisiche.
+    double larghezzaVeicoloMetri = 2.0;
+    double margineExtraMetri = 0.0;
 };
 
 struct GeometriaApex {
@@ -49,6 +52,12 @@ struct RisultatoApex {
     double tempoIniziale = 0.0;
     double tempoFinale = 0.0;
     double durataMs = 0.0;
+    double margineMinimoIniziale = 0.0;
+    double margineMinimoFinale = 0.0;
+    bool validaIniziale = false;
+    bool validaFinale = false;
+    QVector<int> generazioniStorico, individuiValidi, individuiNonValidi;
+    QVector<double> miglioriGenerazione, medieGenerazione, miglioriGlobali;
     // Profili del valutatore usati anche dal calcolo del giro (non inventati dalla GUI).
     QVector<double> distanzaInizialeKm, distanzaOttimizzataKm;
     QVector<double> velocitaInizialeKmh, velocitaOttimizzataKmh;
